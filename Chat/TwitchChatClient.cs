@@ -15,6 +15,7 @@ public class TwitchChatClient : IrcClient
     public static readonly Uri wssUrl = new("wss://irc-ws.chat.twitch.tv:443");
     public static readonly Uri wsUrl = new("ws://irc-ws.chat.twitch.tv:80");
 
+    public event EventHandler<Exception?>? ConnectionClosed;
     public event EventHandler<TwitchGlobalUserStateMessage>? AuthFinished;
     public event EventHandler<string>? ChannelJoined;
     public event EventHandler<TwitchPrivateMessage>? PrivateMessageReceived;
@@ -212,6 +213,8 @@ public class TwitchChatClient : IrcClient
         }
 
         base.ConnectionDisposing(sender, e);
+
+        ConnectionClosed?.Invoke(this, e);
     }
 
     public static string GenerateAnonymName()
