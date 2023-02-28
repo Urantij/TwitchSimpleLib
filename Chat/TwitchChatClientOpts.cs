@@ -6,7 +6,7 @@ using TwitchSimpleLib.Irc;
 
 namespace TwitchSimpleLib.Chat;
 
-public class TwitchChatClientOpts : IIrcClientOpts
+public class TwitchChatClientOpts : IBaseClientOpts
 {
     public string? Username { get; set; }
     public string? OauthToken { get; set; }

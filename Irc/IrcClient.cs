@@ -1,97 +1,43 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography;
 using System.Threading.Tasks;
 using IrcParserNet.Irc;
 using Microsoft.Extensions.Logging;
 
 namespace TwitchSimpleLib.Irc;
 
-public class IrcClient
+public class IrcClient : BaseClient
 {
-    public bool IsConnected => connection?.Connected == true;
-
-    public bool Closed { get; private set; }
-
     public event Action<RawIrcMessage>? RawIrcMessageReceived;
 
-    protected readonly ReconnectionTime reconnectionTime;
-
-    protected ILoggerFactory? _loggerFactory;
-    protected ILogger? _logger;
-
-    private readonly Uri uri;
-    private readonly TimeSpan connectionTimeout;
-    protected IrcConnection? connection;
-
-    protected IrcClient(Uri uri, IIrcClientOpts opts, ILoggerFactory? loggerFactory)
+    protected IrcClient(Uri uri, IBaseClientOpts opts, ILoggerFactory? loggerFactory)
+        : base(uri, opts, loggerFactory)
     {
-        this.uri = uri;
-        this.connectionTimeout = opts.ConnectionTimeout;
-        this._loggerFactory = loggerFactory;
-        this._logger = loggerFactory?.CreateLogger(this.GetType());
-
-        this.reconnectionTime = new ReconnectionTime(opts.MinReconnectTime, opts.MaxReconnectTime);
     }
 
-    public async Task ConnectAsync()
+    protected override void MessageReceived(object? sender, string e)
     {
-        IrcConnection caller = connection = new IrcConnection(uri, _loggerFactory);
-        caller.MessageReceived += MessageReceived;
-        caller.Disposing += ConnectionDisposing;
+        base.MessageReceived(sender, e);
 
-        if (await caller.StartAsync(connectionTimeout))
+        WsConnection connection = (WsConnection)sender!;
+
+        RawIrcMessage ircMessage;
+        try
         {
-            reconnectionTime.Connected();
-
-            await ConnectedAsync(caller);
+            ircMessage = IrcParser.Parse(e);
         }
-    }
-
-    public Task SendRawAsync(string content)
-        => SendRawAsync(connection, content);
-
-    public static Task SendRawAsync(IrcConnection? connection, string content)
-    {
-        if (connection != null)
-            return connection.SendAsync(content);
-
-        return Task.CompletedTask;
-    }
-
-    public void Close()
-    {
-        Closed = true;
-        connection?.Dispose();
-    }
-
-    protected virtual Task ConnectedAsync(IrcConnection connection)
-    {
-        return Task.CompletedTask;
-    }
-
-    protected virtual void MessageReceived(object? sender, RawIrcMessage e)
-    {
-        RawIrcMessageReceived?.Invoke(e);
-    }
-
-    protected virtual void ConnectionDisposing(object? sender, Exception? e)
-    {
-        if (Closed)
-            return;
-
-        _logger?.LogDebug(e, "Disconnected");
-
-        Task.Run(async () =>
+        catch (Exception ex)
         {
-            TimeSpan waitTime = reconnectionTime.DoAttempt();
+            _logger?.LogCritical(ex, $"{nameof(IrcParser)}.{nameof(IrcParser.Parse)}");
+            return;
+        }
 
-            waitTime += TimeSpan.FromMilliseconds(RandomNumberGenerator.GetInt32(50, 750));
+        IrcMessageReceived(connection, ircMessage);
+    }
 
-            await Task.Delay(waitTime);
-
-            await ConnectAsync();
-        });
+    protected virtual void IrcMessageReceived(WsConnection connection, RawIrcMessage message)
+    {
+        RawIrcMessageReceived?.Invoke(message);
     }
 }

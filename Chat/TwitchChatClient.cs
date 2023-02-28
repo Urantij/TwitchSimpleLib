@@ -51,13 +51,13 @@ public class TwitchChatClient : IrcClient
     public Task JoinAsync(string channel)
         => JoinAsync(connection, channel);
 
-    public static Task JoinAsync(IrcConnection? connection, string channel)
+    public static Task JoinAsync(WsConnection? connection, string channel)
         => SendRawAsync(connection, $"JOIN #{channel.ToLower()}");
 
     public Task LeaveAsync(string channel)
         => SendRawAsync($"PART #{channel.ToLower()}");
 
-    protected override async Task ConnectedAsync(IrcConnection connection)
+    protected override async Task ConnectedAsync(WsConnection connection)
     {
         await base.ConnectAsync();
 
@@ -71,13 +71,11 @@ public class TwitchChatClient : IrcClient
         pingManager.Start();
     }
 
-    protected override void MessageReceived(object? sender, RawIrcMessage e)
+    protected override void IrcMessageReceived(WsConnection connection, RawIrcMessage message)
     {
-        base.MessageReceived(sender, e);
+        base.IrcMessageReceived(connection, message);
 
-        IrcConnection connection = (IrcConnection)sender!;
-
-        switch (e.command)
+        switch (message.command)
         {
             // The text portion of the 353 message lists the users in the channel at the time you joined.
             // If the channel already has users joined to it, the reply may contain two 353 messages. The first shows the existing users in the chat room and the second shows the bot that joined.
@@ -86,20 +84,20 @@ public class TwitchChatClient : IrcClient
 
             // the bot successfully joins the channel
             case "366":
-                string channel = e.parameters![1][1..];
+                string channel = message.parameters![1][1..];
                 ProcessChannelJoined(channel);
                 return;
 
             case "PING":
                 {
-                    string text = e.parameters![0];
+                    string text = message.parameters![0];
                     ProcessPing(connection, text);
                     return;
                 }
 
             case "PONG":
                 {
-                    string text = e.parameters![0];
+                    string text = message.parameters![0];
                     ProcessPong(text);
                     return;
                 }
@@ -109,7 +107,7 @@ public class TwitchChatClient : IrcClient
                 return;
 
             case "GLOBALUSERSTATE":
-                TwitchGlobalUserStateMessage globalUserStateMessage = new(e);
+                TwitchGlobalUserStateMessage globalUserStateMessage = new(message);
                 ProcessGlobalUserState(connection, globalUserStateMessage);
                 return;
 
@@ -117,28 +115,28 @@ public class TwitchChatClient : IrcClient
                 return;
 
             case "PRIVMSG":
-                TwitchPrivateMessage privateMessage = new(e);
+                TwitchPrivateMessage privateMessage = new(message);
                 ProcessPrivateMessage(privateMessage);
                 return;
 
             case "ROOMSTATE":
-                TwitchRoomStateMessage roomStateMessage = new(e);
+                TwitchRoomStateMessage roomStateMessage = new(message);
                 ProcessRoomState(roomStateMessage);
                 return;
 
             case "NOTICE":
-                TwitchNoticeMessage noticeMessage = new(e);
+                TwitchNoticeMessage noticeMessage = new(message);
                 ProcessNotice(noticeMessage);
                 return;
 
             case "CLEARCHAT":
-                TwitchClearChatMessage clearChatMessage = new(e);
+                TwitchClearChatMessage clearChatMessage = new(message);
                 ProcessClearChat(clearChatMessage);
                 return;
         }
     }
 
-    private async void ProcessGlobalUserState(IrcConnection connection, TwitchGlobalUserStateMessage message)
+    private async void ProcessGlobalUserState(WsConnection connection, TwitchGlobalUserStateMessage message)
     {
         AuthFinished?.Invoke(this, message);
 
@@ -152,7 +150,7 @@ public class TwitchChatClient : IrcClient
         }
     }
 
-    private async void ProcessPing(IrcConnection connection, string text)
+    private async void ProcessPing(WsConnection connection, string text)
     {
         await SendRawAsync(connection, $"PONG :{text}");
     }

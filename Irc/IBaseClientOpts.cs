@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace TwitchSimpleLib.Irc;
 
-public interface IIrcClientOpts
+public interface IBaseClientOpts
 {
     public TimeSpan ConnectionTimeout { get; }
     public TimeSpan MinReconnectTime { get; }

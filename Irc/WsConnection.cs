@@ -9,7 +9,7 @@ using Microsoft.Extensions.Logging;
 
 namespace TwitchSimpleLib.Irc;
 
-public class IrcConnection
+public class WsConnection
 {
     private const int bufferSizeStep = 512;
 
@@ -26,10 +26,10 @@ public class IrcConnection
 
     public bool Connected => client?.State == WebSocketState.Open;
 
-    public event EventHandler<RawIrcMessage>? MessageReceived;
+    public event EventHandler<string>? MessageReceived;
     public event EventHandler<Exception?>? Disposing;
 
-    public IrcConnection(Uri uri, ILoggerFactory? loggerFactory = null, CancellationToken cancellationToken = default)
+    public WsConnection(Uri uri, ILoggerFactory? loggerFactory = null, CancellationToken cancellationToken = default)
     {
         this.uri = uri;
         this._logger = loggerFactory?.CreateLogger(this.GetType());
@@ -151,18 +151,7 @@ public class IrcConnection
                         string[] messages = messagesString.Split("\r\n", StringSplitOptions.RemoveEmptyEntries);
                         foreach (string singleMessage in messages)
                         {
-                            RawIrcMessage ircMessage;
-                            try
-                            {
-                                ircMessage = IrcParser.Parse(singleMessage);
-                            }
-                            catch (Exception e)
-                            {
-                                _logger?.LogCritical(e, $"{nameof(IrcParser)}.{nameof(IrcParser.Parse)}");
-                                continue;
-                            }
-
-                            OnMessageReceived(ircMessage);
+                            OnMessageReceived(singleMessage);
                         }
                         currentCount = 0;
                         spaceLeft = buffer.Length;
@@ -180,7 +169,7 @@ public class IrcConnection
         }
     }
 
-    private void OnMessageReceived(RawIrcMessage message)
+    private void OnMessageReceived(string message)
     {
         try
         {
@@ -188,7 +177,7 @@ public class IrcConnection
         }
         catch (Exception e)
         {
-            _logger?.LogCritical(e, $"{nameof(IrcConnection)}.{nameof(OnMessageReceived)}");
+            _logger?.LogCritical(e, $"{nameof(WsConnection)}.{nameof(OnMessageReceived)}");
         }
     }
 
@@ -208,7 +197,7 @@ public class IrcConnection
             }
             catch (Exception invokedException)
             {
-                _logger?.LogCritical(invokedException, $"{nameof(IrcConnection)}.{nameof(Disposing)}");
+                _logger?.LogCritical(invokedException, $"{nameof(WsConnection)}.{nameof(Disposing)}");
             }
         }
     }
