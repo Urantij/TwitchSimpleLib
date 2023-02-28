@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Threading.Tasks;
 using IrcParserNet.Irc;
 using Microsoft.Extensions.Logging;
@@ -85,6 +86,8 @@ public class IrcClient
         Task.Run(async () =>
         {
             TimeSpan waitTime = reconnectionTime.DoAttempt();
+
+            waitTime += TimeSpan.FromMilliseconds(RandomNumberGenerator.GetInt32(50, 750));
 
             await Task.Delay(waitTime);
 
