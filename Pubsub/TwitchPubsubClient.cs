@@ -7,6 +7,7 @@ using IrcParserNet.Irc;
 using Microsoft.Extensions.Logging;
 using TwitchSimpleLib.Irc;
 using TwitchSimpleLib.Pubsub.Messages;
+using TwitchSimpleLib.Pubsub.Payloads.BroadcastSettings;
 using TwitchSimpleLib.Pubsub.Payloads.Playback;
 using TwitchSimpleLib.Pubsub.Payloads.Predictions;
 
@@ -23,6 +24,7 @@ public class TwitchPubsubClient : BaseClient
 
     public event Action<(string channelId, PredictionData)>? PredictionReceived;
     public event Action<(string channelId, PlaybackData)>? PlaybackReceived;
+    public event Action<(string channelId, BroadcastSettingsData)>? BroadcastSettingsReceived;
 
     private readonly List<string> topics = new();
 
@@ -44,6 +46,11 @@ public class TwitchPubsubClient : BaseClient
     public void AddPlaybackTopic(string channelTwitchId)
     {
         topics.Add("video-playback-by-id." + channelTwitchId);
+    }
+
+    public void AddBroadcastSettingsTopic(string channelTwitchId)
+    {
+        topics.Add("broadcast-settings-update." + channelTwitchId);
     }
 
     public Task SendMessageAsync(BasePubsubMessage messageObject)
@@ -153,6 +160,13 @@ public class TwitchPubsubClient : BaseClient
                     var data = JsonSerializer.Deserialize<PlaybackData>(unescapedMessage)!;
 
                     PlaybackReceived?.Invoke((channelId, data));
+                }
+                return;
+            case "broadcast-settings-update":
+                {
+                    var data = JsonSerializer.Deserialize<BroadcastSettingsData>(unescapedMessage)!;
+
+                    BroadcastSettingsReceived?.Invoke((channelId, data));
                 }
                 return;
         }
