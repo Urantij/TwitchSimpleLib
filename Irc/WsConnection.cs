@@ -144,6 +144,7 @@ public class WsConnection
 
                         Dispose(new Exception($"{nameof(WebSocketMessageType)}.{nameof(WebSocketMessageType.Close)}"));
                         return;
+
                     case WebSocketMessageType.Text when result.EndOfMessage:
 
                         string messagesString = Encoding.UTF8.GetString(buffer, 0, currentCount);
@@ -156,10 +157,12 @@ public class WsConnection
                         currentCount = 0;
                         spaceLeft = buffer.Length;
                         break;
+                    case WebSocketMessageType.Text:
+                        break;
                     case WebSocketMessageType.Binary:
                         break;
                     default:
-                        throw new ArgumentOutOfRangeException();
+                        throw new ArgumentOutOfRangeException(result.MessageType.ToString());
                 }
             }
         }
