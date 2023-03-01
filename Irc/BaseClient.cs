@@ -14,6 +14,9 @@ public class BaseClient
 
     public bool Closed { get; private set; }
 
+    public event Action? Connected;
+    public event Action<Exception?>? ConnectionClosed;
+
     protected readonly ReconnectionTime reconnectionTime;
 
     protected ILoggerFactory? _loggerFactory;
@@ -44,6 +47,8 @@ public class BaseClient
             reconnectionTime.Connected();
 
             await ConnectedAsync(caller);
+
+            Connected?.Invoke();
         }
     }
 
@@ -90,5 +95,7 @@ public class BaseClient
 
             await ConnectAsync();
         });
+
+        ConnectionClosed?.Invoke(e);
     }
 }
