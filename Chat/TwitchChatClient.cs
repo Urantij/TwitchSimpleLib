@@ -64,7 +64,7 @@ public class TwitchChatClient : IrcClient
 
     protected override async Task ConnectedAsync(WsConnection connection)
     {
-        await base.ConnectAsync();
+        await base.ConnectedAsync(connection);
 
         await connection.SendAsync("CAP REQ :twitch.tv/tags twitch.tv/commands");
         await connection.SendAsync("PASS " + opts.OauthToken ?? GenerateAnonymName());
