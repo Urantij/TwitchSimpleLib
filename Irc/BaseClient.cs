@@ -38,6 +38,8 @@ public class BaseClient
 
     public async Task ConnectAsync()
     {
+        Closed = false;
+
         WsConnection caller = connection = new WsConnection(uri, _loggerFactory);
         caller.MessageReceived += MessageReceived;
         caller.Disposing += ConnectionDisposing;
@@ -80,21 +82,19 @@ public class BaseClient
 
     protected virtual void ConnectionDisposing(object? sender, Exception? e)
     {
-        if (Closed)
-            return;
-
-        _logger?.LogDebug(e, "Disconnected");
-
-        Task.Run(async () =>
+        if (!Closed)
         {
-            TimeSpan waitTime = reconnectionTime.DoAttempt();
+            Task.Run(async () =>
+            {
+                TimeSpan waitTime = reconnectionTime.DoAttempt();
 
-            waitTime += TimeSpan.FromMilliseconds(RandomNumberGenerator.GetInt32(50, 750));
+                waitTime += TimeSpan.FromMilliseconds(RandomNumberGenerator.GetInt32(50, 750));
 
-            await Task.Delay(waitTime);
+                await Task.Delay(waitTime);
 
-            await ConnectAsync();
-        });
+                await ConnectAsync();
+            });
+        }
 
         ConnectionClosed?.Invoke(e);
     }
