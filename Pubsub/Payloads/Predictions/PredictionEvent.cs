@@ -8,6 +8,7 @@ namespace TwitchSimpleLib.Pubsub.Payloads.Predictions;
 
 public class PredictionEvent
 {
+    [JsonPropertyName("id")]
     public string Id { get; set; }
     // Не нужен
     //public string channel_id { get; set; }
@@ -27,11 +28,14 @@ public class PredictionEvent
     [JsonPropertyName("locked_by")]
     public PredictionUser? LockedBy { get; set; }
 
+    [JsonPropertyName("outcomes")]
     public PredictionOutcome[] Outcomes { get; set; }
 
     [JsonPropertyName("prediction_window_seconds")]
     public int PredictionWindowSeconds { get; set; }
+    [JsonPropertyName("status")]
     public string Status { get; set; }
+    [JsonPropertyName("title")]
     public string Title { get; set; }
     [JsonPropertyName("winning_outcome_id")]
     public string? WinningOutcomeId { get; set; }

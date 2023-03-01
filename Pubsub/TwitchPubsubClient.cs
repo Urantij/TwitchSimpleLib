@@ -17,12 +17,7 @@ public class TwitchPubsubClient : BaseClient
 {
     public static readonly Uri url = new("wss://pubsub-edge.twitch.tv");
 
-    private static readonly JsonSerializerOptions jsonSerializerOptions = new()
-    {
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-    };
-
-    public event Action<(string channelId, PredictionData)>? PredictionReceived;
+    public event Action<(string channelId, PredictionPayload)>? PredictionReceived;
     public event Action<(string channelId, PlaybackData)>? PlaybackReceived;
     public event Action<(string channelId, BroadcastSettingsData)>? BroadcastSettingsReceived;
 
@@ -63,7 +58,7 @@ public class TwitchPubsubClient : BaseClient
 
     private Task SendMessageAsync(WsConnection? caller, BasePubsubMessage messageObject)
     {
-        string messageString = JsonSerializer.Serialize(messageObject, messageObject.GetType(), options: jsonSerializerOptions);
+        string messageString = JsonSerializer.Serialize(messageObject, messageObject.GetType());
 
         return SendRawAsync(caller, messageString);
     }
@@ -155,7 +150,7 @@ public class TwitchPubsubClient : BaseClient
         {
             case "predictions-channel-v1":
                 {
-                    var data = JsonSerializer.Deserialize<PredictionData>(unescapedMessage)!;
+                    var data = JsonSerializer.Deserialize<PredictionPayload>(unescapedMessage)!;
 
                     PredictionReceived?.Invoke((channelId, data));
                 }

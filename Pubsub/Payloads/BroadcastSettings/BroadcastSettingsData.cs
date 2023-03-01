@@ -12,16 +12,19 @@ public class BroadcastSettingsData
     /// <summary>
     /// broadcast_settings_update
     /// </summary>
+    [JsonPropertyName("type")]
     public string Type { get; set; }
 
     [JsonPropertyName("old_status")]
     public string OldStatus { get; set; }
 
+    [JsonPropertyName("status")]
     public string Status { get; set; }
 
     [JsonPropertyName("old_game")]
     public string OldGame { get; set; }
 
+    [JsonPropertyName("game")]
     public string Game { get; set; }
 
     [JsonPropertyName("old_game_id")]

@@ -4,21 +4,18 @@ using System.Linq;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace TwitchSimpleLib.Pubsub;
+namespace TwitchSimpleLib.Pubsub.Payloads.Predictions;
 
-public abstract class BasePubsubMessage
+public class PredictionPayload
 {
     [JsonPropertyName("type")]
     public string Type { get; set; }
-    [JsonPropertyName("nonce")]
-    public string? Nonce { get; set; }
     [JsonPropertyName("data")]
-    public object? Data { get; set; }
+    public PredictionData Data { get; set; }
 
-    protected BasePubsubMessage(string type, object? data, string? nonce)
+    public PredictionPayload(string type, PredictionData data)
     {
         Type = type;
         Data = data;
-        Nonce = nonce;
     }
 }

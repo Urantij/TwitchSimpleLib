@@ -21,6 +21,7 @@ public class PlaybackData
     /// <summary>
     /// "stream-up" "stream-down"
     /// </summary>
+    [JsonPropertyName("type")]
     public string Type { get; set; }
 
     public PlaybackData(long serverTime, int? playDelay, string type)

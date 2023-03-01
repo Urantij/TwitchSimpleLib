@@ -8,8 +8,11 @@ namespace TwitchSimpleLib.Pubsub.Payloads.Predictions;
 
 public class PredictionOutcome
 {
+    [JsonPropertyName("id")]
     public string Id { get; set; }
+    [JsonPropertyName("color")]
     public string Color { get; set; }
+    [JsonPropertyName("title")]
     public string Title { get; set; }
 
     [JsonPropertyName("total_points")]

@@ -10,6 +10,7 @@ public class PubsubListenMessage : BasePubsubMessage
 {
     public class ListenData
     {
+        [JsonPropertyName("topics")]
         public IEnumerable<string> Topics { get; set; }
         [JsonPropertyName("auth_token")]
         public string? AuthToken { get; set; }
