@@ -32,7 +32,12 @@ public class TwitchPubsubClient : BaseClient
 
     private readonly TwitchPubsubClientOpts opts;
 
-    protected TwitchPubsubClient(Uri uri, TwitchPubsubClientOpts opts, ILoggerFactory? loggerFactory)
+    public TwitchPubsubClient(TwitchPubsubClientOpts opts, ILoggerFactory? loggerFactory)
+        : this(url, opts, loggerFactory)
+    {
+    }
+
+    public TwitchPubsubClient(Uri uri, TwitchPubsubClientOpts opts, ILoggerFactory? loggerFactory)
         : base(uri, opts, loggerFactory)
     {
         this.opts = opts;

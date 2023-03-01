@@ -28,7 +28,13 @@ public class TwitchChatClient : IrcClient
     private readonly List<string> autoJoinChannels = new();
     private PingManager? pingManager;
 
-    protected TwitchChatClient(Uri uri, TwitchChatClientOpts opts, ILoggerFactory? loggerFactory)
+    public TwitchChatClient(bool secure, TwitchChatClientOpts opts, ILoggerFactory? loggerFactory)
+        : this(secure ? wssUrl : wsUrl, opts, loggerFactory)
+    {
+
+    }
+
+    public TwitchChatClient(Uri uri, TwitchChatClientOpts opts, ILoggerFactory? loggerFactory)
         : base(uri, opts, loggerFactory)
     {
         this.opts = opts;
