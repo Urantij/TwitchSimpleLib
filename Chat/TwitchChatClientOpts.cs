@@ -8,8 +8,10 @@ namespace TwitchSimpleLib.Chat;
 
 public class TwitchChatClientOpts : IBaseClientOpts
 {
-    public string? Username { get; set; }
-    public string? OauthToken { get; set; }
+    public string Username { get; set; }
+    public string OauthToken { get; set; }
+
+    public bool Anonymous { get; set; }
 
     public TimeSpan PingDelay { get; set; } = TimeSpan.FromMinutes(1);
     public TimeSpan PingTimeout { get; set; } = TimeSpan.FromSeconds(10);
@@ -22,9 +24,13 @@ public class TwitchChatClientOpts : IBaseClientOpts
     {
         Username = username;
         OauthToken = oauthToken;
+        Anonymous = false;
     }
 
     public TwitchChatClientOpts()
     {
+        Username = TwitchChatClient.GenerateAnonymName();
+        OauthToken = "SCHMOOPIIE";
+        Anonymous = true;
     }
 }

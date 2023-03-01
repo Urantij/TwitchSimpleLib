@@ -32,8 +32,11 @@ public class TwitchNoticeMessage : BaseIrcMessage
 
         notice = Parameter(1);
 
-        msgId = OptionalTag("msg-id");
+        if (rawIrcMessage.tags != null)
+        {
+            msgId = OptionalTag("msg-id");
 
-        targetUserId = OptionalTag("target-user-id");
+            targetUserId = OptionalTag("target-user-id");
+        }
     }
 }

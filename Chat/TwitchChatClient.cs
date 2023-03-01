@@ -15,7 +15,14 @@ public class TwitchChatClient : IrcClient
     public static readonly Uri wssUrl = new("wss://irc-ws.chat.twitch.tv:443");
     public static readonly Uri wsUrl = new("ws://irc-ws.chat.twitch.tv:80");
 
-    public event EventHandler<TwitchGlobalUserStateMessage>? AuthFinished;
+    /// <summary>
+    /// Null, если вход анонимный.
+    /// </summary>
+    public event EventHandler<TwitchGlobalUserStateMessage?>? AuthFinished;
+    /// <summary>
+    /// Единственный вылет, когда клиент не будет пытаться переподключиться.
+    /// </summary>
+    public event EventHandler? AuthFailed;
     public event EventHandler<string>? ChannelJoined;
     public event EventHandler<TwitchPrivateMessage>? PrivateMessageReceived;
     public event EventHandler<TwitchRoomStateMessage>? RoomStateReceived;
@@ -67,8 +74,9 @@ public class TwitchChatClient : IrcClient
         await base.ConnectedAsync(connection);
 
         await connection.SendAsync("CAP REQ :twitch.tv/tags twitch.tv/commands");
-        await connection.SendAsync("PASS " + opts.OauthToken ?? GenerateAnonymName());
-        await connection.SendAsync("NICK " + opts.Username?.ToLower() ?? "SCHMOOPIIE");
+        await connection.SendAsync("PASS " + opts.OauthToken);
+        await connection.SendAsync("NICK " + opts.Username/*.ToLower()*/);
+        // USER urantij 8 * :urantij
 
         pingManager = new(true, opts.PingDelay, opts.PingTimeout);
         pingManager.Pinging += Pinging;
@@ -91,6 +99,11 @@ public class TwitchChatClient : IrcClient
             case "366":
                 string channel = message.parameters![1][1..];
                 ProcessChannelJoined(channel);
+                return;
+
+            // Это просто конец сообщения дня, но оно всегда приходит в конце аутентификации.
+            case "376":
+                Process376();
                 return;
 
             case "PING":
@@ -141,6 +154,23 @@ public class TwitchChatClient : IrcClient
         }
     }
 
+    private async void Process376()
+    {
+        if (!opts.Anonymous)
+            return;
+
+        AuthFinished?.Invoke(this, null);
+
+        string[] channels;
+        lock (autoJoinChannels)
+            channels = autoJoinChannels.ToArray();
+
+        foreach (string channel in channels)
+        {
+            await JoinAsync(connection, channel);
+        }
+    }
+
     private async void ProcessGlobalUserState(WsConnection connection, TwitchGlobalUserStateMessage message)
     {
         AuthFinished?.Invoke(this, message);
@@ -183,6 +213,13 @@ public class TwitchChatClient : IrcClient
     private void ProcessNotice(TwitchNoticeMessage message)
     {
         NoticeReceived?.Invoke(this, message);
+
+        if (message.notice == "Login authentication failed")
+        {
+            Close();
+
+            AuthFailed?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     private void ProcessClearChat(TwitchClearChatMessage message)
