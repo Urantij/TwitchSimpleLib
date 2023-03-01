@@ -13,7 +13,7 @@ public class TwitchPubsubClientOpts : IBaseClientOpts
     public TimeSpan PingDelay { get; set; } = TimeSpan.FromMinutes(1);
     public TimeSpan PingTimeout { get; set; } = TimeSpan.FromSeconds(10);
 
-    public TimeSpan ConnectionTimeout { get; set; }
-    public TimeSpan MinReconnectTime { get; set; }
-    public TimeSpan MaxReconnectTime { get; set; }
+    public TimeSpan ConnectionTimeout { get; set; } = TimeSpan.FromSeconds(10);
+    public TimeSpan MinReconnectTime { get; set; } = TimeSpan.FromMilliseconds(500);
+    public TimeSpan MaxReconnectTime { get; set; } = TimeSpan.FromSeconds(15);
 }
