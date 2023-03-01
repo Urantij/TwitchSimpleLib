@@ -9,9 +9,9 @@ public abstract class BasePubsubMessage
 {
     public string Type { get; set; }
     public string? Nonce { get; set; }
-    public object Data { get; set; }
+    public object? Data { get; set; }
 
-    protected BasePubsubMessage(string type, object data, string? nonce)
+    protected BasePubsubMessage(string type, object? data, string? nonce)
     {
         Type = type;
         Data = data;

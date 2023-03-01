@@ -15,21 +15,23 @@ public class TwitchPubsubClient : BaseClient
 {
     public static readonly Uri url = new("wss://pubsub-edge.twitch.tv");
 
-    public event Action<(string channelId, PredictionData)>? PredictionReceived;
-
-    private readonly List<string> topics = new();
-
-    private readonly string? oauthToken;
-
     private static readonly JsonSerializerOptions jsonSerializerOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase
     };
 
+    public event Action<(string channelId, PredictionData)>? PredictionReceived;
+
+    private readonly List<string> topics = new();
+
+    private PingManager? pingManager;
+
+    private readonly TwitchPubsubClientOpts opts;
+
     protected TwitchPubsubClient(Uri uri, TwitchPubsubClientOpts opts, ILoggerFactory? loggerFactory)
         : base(uri, opts, loggerFactory)
     {
-        this.oauthToken = opts.OauthToken;
+        this.opts = opts;
     }
 
     public void AddPredictionsTopic(string channelTwitchId)
@@ -51,9 +53,14 @@ public class TwitchPubsubClient : BaseClient
     {
         await base.ConnectedAsync(connection);
 
-        PubsubListenMessage listenMessage = new(new PubsubListenMessage.ListenData(topics, oauthToken), "Starting");
+        PubsubListenMessage listenMessage = new(new PubsubListenMessage.ListenData(topics, opts.OauthToken), "Starting");
 
         await SendMessageAsync(connection, listenMessage);
+
+        pingManager = new(false, opts.PingDelay, opts.PingTimeout);
+        pingManager.Pinging += Pinging;
+        pingManager.Timeouted += Timeouted;
+        pingManager.Start();
     }
 
     protected override void MessageReceived(object? sender, string e)
@@ -72,6 +79,7 @@ public class TwitchPubsubClient : BaseClient
         switch (type)
         {
             case "PONG":
+                pingManager?.PongReceived("");
                 return;
 
             case "RECONNECT":
@@ -134,5 +142,34 @@ public class TwitchPubsubClient : BaseClient
                 }
                 return;
         }
+    }
+
+    private async Task Pinging(PingManager pingManager, string text)
+    {
+        if (pingManager != this.pingManager)
+            return;
+
+        PubsubPingMessage message = new();
+        await SendMessageAsync(message);
+    }
+
+    private void Timeouted(PingManager pingManager)
+    {
+        if (pingManager != this.pingManager)
+            return;
+
+        connection!.Dispose(new Exception("Ping Timeout"));
+    }
+
+    protected override void ConnectionDisposing(object? sender, Exception? e)
+    {
+        if (pingManager != null)
+        {
+            pingManager.Stop();
+            pingManager.Pinging -= Pinging;
+            pingManager.Timeouted -= Timeouted;
+        }
+
+        base.ConnectionDisposing(sender, e);
     }
 }
