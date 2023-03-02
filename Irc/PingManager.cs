@@ -43,7 +43,7 @@ public class PingManager
 
     public void PongReceived(string text)
     {
-        if (compareText && text == expectedText)
+        if (!compareText || text == expectedText)
         {
             cts.Cancel();
             cts.Dispose();
