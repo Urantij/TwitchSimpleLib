@@ -37,16 +37,19 @@ public class PingManager
     public void Stop()
     {
         Stopped = true;
-        cts.Cancel();
-        cts.Dispose();
+
+        var thisCts = cts;
+        thisCts.Cancel();
+        thisCts.Dispose();
     }
 
     public void PongReceived(string text)
     {
         if (!compareText || text == expectedText)
         {
-            cts.Cancel();
-            cts.Dispose();
+            var thisCts = cts;
+            thisCts.Cancel();
+            thisCts.Dispose();
         }
     }
 
