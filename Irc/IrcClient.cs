@@ -22,16 +22,7 @@ public class IrcClient : BaseClient
 
         WsConnection connection = (WsConnection)sender!;
 
-        RawIrcMessage ircMessage;
-        try
-        {
-            ircMessage = IrcParser.Parse(e);
-        }
-        catch (Exception ex)
-        {
-            _logger?.LogCritical(ex, $"{nameof(IrcParser)}.{nameof(IrcParser.Parse)}");
-            return;
-        }
+        RawIrcMessage ircMessage = IrcParser.Parse(e);
 
         IrcMessageReceived(connection, ircMessage);
     }

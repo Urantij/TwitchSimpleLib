@@ -16,6 +16,7 @@ public class BaseClient
 
     public event Action? Connected;
     public event Action<Exception?>? ConnectionClosed;
+    public event Action<Exception>? MessageProcessingException;
 
     protected readonly ReconnectionTime reconnectionTime;
 
@@ -41,7 +42,7 @@ public class BaseClient
         Closed = false;
 
         WsConnection caller = connection = new WsConnection(uri, _loggerFactory);
-        caller.MessageReceived += MessageReceived;
+        caller.MessageReceived += OnMessageReceived;
         caller.Disposing += ConnectionDisposing;
 
         if (await caller.StartAsync(connectionTimeout))
@@ -74,6 +75,18 @@ public class BaseClient
     protected virtual Task ConnectedAsync(WsConnection connection)
     {
         return Task.CompletedTask;
+    }
+
+    private void OnMessageReceived(object? sender, string e)
+    {
+        try
+        {
+            MessageReceived(sender, e);
+        }
+        catch (Exception ex)
+        {
+            MessageProcessingException?.Invoke(ex);
+        }
     }
 
     protected virtual void MessageReceived(object? sender, string e)
