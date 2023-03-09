@@ -16,7 +16,7 @@ public class BaseClient
 
     public event Action? Connected;
     public event Action<Exception?>? ConnectionClosed;
-    public event Action<Exception>? MessageProcessingException;
+    public event Action<(Exception exception, string message)>? MessageProcessingException;
 
     protected readonly ReconnectionTime reconnectionTime;
 
@@ -85,7 +85,7 @@ public class BaseClient
         }
         catch (Exception ex)
         {
-            MessageProcessingException?.Invoke(ex);
+            MessageProcessingException?.Invoke((ex, e));
         }
     }
 
