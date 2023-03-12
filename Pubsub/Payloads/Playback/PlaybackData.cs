@@ -14,7 +14,7 @@ public class PlaybackData
     /// Доступно, если тип "stream-up" "stream-down"
     /// </summary>
     [JsonPropertyName("server_time")]
-    public long? ServerTime { get; set; }
+    public double? ServerTime { get; set; }
 
     /// <summary>
     /// Доступно, если тип "stream-up"
@@ -34,7 +34,7 @@ public class PlaybackData
     [JsonPropertyName("type")]
     public string Type { get; set; }
 
-    public PlaybackData(long? serverTime, int? playDelay, int? viewers, string type)
+    public PlaybackData(double? serverTime, int? playDelay, int? viewers, string type)
     {
         ServerTime = serverTime;
         PlayDelay = playDelay;
