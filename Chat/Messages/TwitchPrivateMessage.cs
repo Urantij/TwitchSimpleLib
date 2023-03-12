@@ -15,7 +15,7 @@ public class TwitchPrivateMessage : BaseIrcMessage
     public readonly string username;
 
     /// <summary>
-    /// Comma-separated list of chat badges in the form, <badge>/<version>. 
+    /// Comma-separated list of chat badges in the form, {badge}/{version}. 
     /// For example, admin/1. 
     /// There are many possible badge values, but here are few:
     /// admin
@@ -31,7 +31,7 @@ public class TwitchPrivateMessage : BaseIrcMessage
 
     /// <summary>
     /// The color of the user’s name in the chat room. 
-    /// This is a hexadecimal RGB color code in the form, #<RGB>. 
+    /// This is a hexadecimal RGB color code in the form, #{RGB}.
     /// This tag may be empty if it is never set.
     /// </summary>
     public readonly string? color;

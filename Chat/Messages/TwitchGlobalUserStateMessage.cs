@@ -12,7 +12,7 @@ namespace TwitchSimpleLib.Chat.Messages;
 public class TwitchGlobalUserStateMessage : BaseIrcMessage
 {
     /// <summary>
-    /// The color of the user’s name in the chat room. This is a hexadecimal RGB color code in the form, #<RGB>. This tag may be empty if it is never set.
+    /// The color of the user’s name in the chat room. This is a hexadecimal RGB color code in the form, #{RGB}. This tag may be empty if it is never set.
     /// </summary>
     public readonly string? color;
     /// <summary>
