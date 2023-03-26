@@ -174,7 +174,7 @@ public class TwitchPubsubClient : BaseClient
 
     private async Task Pinging(PingManager pingManager, string text)
     {
-        if (pingManager != this.pingManager)
+        if (pingManager != this.pingManager || !IsConnected)
             return;
 
         PubsubPingMessage message = new();
@@ -183,7 +183,7 @@ public class TwitchPubsubClient : BaseClient
 
     private void Timeouted(PingManager pingManager)
     {
-        if (pingManager != this.pingManager)
+        if (pingManager != this.pingManager || !IsConnected)
             return;
 
         connection!.Dispose(new Exception("Ping Timeout"));
@@ -193,9 +193,9 @@ public class TwitchPubsubClient : BaseClient
     {
         if (pingManager != null)
         {
-            pingManager.Stop();
             pingManager.Pinging -= Pinging;
             pingManager.Timeouted -= Timeouted;
+            pingManager.Stop();
         }
 
         base.ConnectionDisposing(sender, e);

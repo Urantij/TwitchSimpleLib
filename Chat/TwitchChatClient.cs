@@ -229,7 +229,7 @@ public class TwitchChatClient : IrcClient
 
     private async Task Pinging(PingManager pingManager, string text)
     {
-        if (pingManager != this.pingManager)
+        if (pingManager != this.pingManager || !IsConnected)
             return;
 
         await SendRawAsync($"PING :{text}");
@@ -237,7 +237,7 @@ public class TwitchChatClient : IrcClient
 
     private void Timeouted(PingManager pingManager)
     {
-        if (pingManager != this.pingManager)
+        if (pingManager != this.pingManager || !IsConnected)
             return;
 
         connection!.Dispose(new Exception("Ping Timeout"));
@@ -247,9 +247,9 @@ public class TwitchChatClient : IrcClient
     {
         if (pingManager != null)
         {
-            pingManager.Stop();
             pingManager.Pinging -= Pinging;
             pingManager.Timeouted -= Timeouted;
+            pingManager.Stop();
         }
 
         base.ConnectionDisposing(sender, e);
