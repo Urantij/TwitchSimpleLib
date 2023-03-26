@@ -39,8 +39,12 @@ public class PingManager
         Stopped = true;
 
         var thisCts = cts;
-        thisCts.Cancel();
-        thisCts.Dispose();
+        try
+        {
+            thisCts.Cancel();
+            thisCts.Dispose();
+        }
+        catch { }
     }
 
     public void PongReceived(string text)
@@ -48,8 +52,12 @@ public class PingManager
         if (!compareText || text == expectedText)
         {
             var thisCts = cts;
-            thisCts.Cancel();
-            thisCts.Dispose();
+            try
+            {
+                thisCts.Cancel();
+                thisCts.Dispose();
+            }
+            catch { }
         }
     }
 
@@ -62,6 +70,9 @@ public class PingManager
             try
             {
                 await Task.Delay(pingDelay, cts.Token);
+
+                // Если отмена произошла здесь, нет смысла делать проверку на стоп.
+                // Потому что мы либо уже получили понг, и ждём кд, либо не попадаем сюда.
             }
             catch { return; }
 
