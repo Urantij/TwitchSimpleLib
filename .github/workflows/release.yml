@@ -1,8 +1,12 @@
 name: Nuget
 
 on:
-  pull_request:
-    branches: [release]
+  push:
+    branches: [master]
+    paths:
+      - "**.csproj"
+    tags:
+      - "Release**"
 
 jobs:
   build:
