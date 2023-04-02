@@ -290,7 +290,7 @@ public class TwitchChatClient : IrcClient
     private ChatAutoChannel? GetChannel(string channelName)
     {
         lock (autoChannels)
-            return autoChannels.FirstOrDefault(c => c.channel.Equals(channelName, StringComparison.InvariantCultureIgnoreCase));
+            return autoChannels.FirstOrDefault(c => c.channel.Equals(channelName, StringComparison.OrdinalIgnoreCase));
     }
 
     public static string GenerateAnonymName()
