@@ -20,16 +20,32 @@ public class ChatAutoChannel
     /// </summary>
     public bool IsJoined { get; internal set; }
 
+    /// <summary>
+    /// Доступен после первого RoomStateReceived.
+    /// </summary>
+    public string? RoomId { get; private set; }
+
+    /// <summary>
+    /// Доступен после первого RoomStateReceived.
+    /// </summary>
     public bool? EmoteOnly { get; private set; }
     /// <summary>
+    /// Доступен после первого RoomStateReceived.
     /// В минутах.
     /// </summary>
     public int? FollowersOnly { get; private set; }
+    /// <summary>
+    /// Доступен после первого RoomStateReceived.
+    /// </summary>
     public bool? R9k { get; private set; }
     /// <summary>
+    /// Доступен после первого RoomStateReceived.
     /// В секундах.
     /// </summary>
     public int? Slow { get; private set; }
+    /// <summary>
+    /// Доступен после первого RoomStateReceived.
+    /// </summary>
     public bool? SubsOnly { get; private set; }
 
     public event EventHandler? ChannelJoined;
@@ -69,6 +85,8 @@ public class ChatAutoChannel
 
     internal void OnRoomStateReceived(TwitchRoomStateMessage msg)
     {
+        if (msg.roomId != null)
+            RoomId = msg.roomId;
         if (msg.emoteOnly != null)
             EmoteOnly = msg.emoteOnly;
         if (msg.followersOnly != null)
