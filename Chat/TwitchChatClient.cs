@@ -63,6 +63,58 @@ public class TwitchChatClient : IrcClient
         return autoChannel;
     }
 
+    /// <summary>
+    /// Можно использовать после старта бота.
+    /// </summary>
+    /// <param name="channel"></param>
+    /// <returns></returns>
+    public async Task<ChatAutoChannel> AddAutoChannelAsync(string channel)
+    {
+        ChatAutoChannel? autoChannel = GetChannel(channel);
+
+        if (autoChannel != null)
+            return autoChannel;
+
+        autoChannel = new(channel, this);
+
+        lock (autoChannels)
+        {
+            autoChannels.Add(autoChannel);
+        }
+
+        if (IsConnected)
+        {
+            await JoinAsync(channel);
+        }
+
+        return autoChannel;
+    }
+
+    public async Task<bool> RemoveAutoChannelAsync(ChatAutoChannel autoChannel)
+    {
+        bool removed;
+        lock (autoChannels)
+        {
+            removed = autoChannels.Remove(autoChannel);
+        }
+
+        if (removed && IsConnected)
+        {
+            await LeaveAsync(autoChannel.channel);
+        }
+
+        return removed;
+    }
+
+    public Task<bool> RemoveAutoChannelAsync(string channel)
+    {
+        ChatAutoChannel? autoChannel = GetChannel(channel);
+        if (autoChannel == null)
+            return Task.FromResult(false);
+
+        return RemoveAutoChannelAsync(autoChannel);
+    }
+
     public Task SendMessageAsync(string channel, string text)
         => SendRawAsync($"PRIVMSG #{channel.ToLower()} :{text}");
 
