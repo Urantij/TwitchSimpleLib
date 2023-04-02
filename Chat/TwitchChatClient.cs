@@ -31,7 +31,7 @@ public class TwitchChatClient : IrcClient
 
     private readonly TwitchChatClientOpts opts;
 
-    private readonly List<string> autoJoinChannels = new();
+    private readonly List<ChatAutoChannel> autoChannels = new();
     private PingManager? pingManager;
 
     public TwitchChatClient(bool secure, TwitchChatClientOpts opts, ILoggerFactory? loggerFactory)
@@ -46,12 +46,21 @@ public class TwitchChatClient : IrcClient
         this.opts = opts;
     }
 
-    public void AddAutoJoinChannel(string channel)
+    /// <summary>
+    /// Использовать перед <see cref="ConnectedAsync"/>
+    /// </summary>
+    /// <param name="channel"></param>
+    /// <returns></returns>
+    public ChatAutoChannel AddAutoJoinChannel(string channel)
     {
-        lock (autoJoinChannels)
+        ChatAutoChannel autoChannel = new(channel, this);
+
+        lock (autoChannels)
         {
-            autoJoinChannels.Add(channel);
+            autoChannels.Add(autoChannel);
         }
+
+        return autoChannel;
     }
 
     public Task SendMessageAsync(string channel, string text)
@@ -103,7 +112,7 @@ public class TwitchChatClient : IrcClient
 
             // Это просто конец сообщения дня, но оно всегда приходит в конце аутентификации.
             case "376":
-                Process376();
+                Process376(connection);
                 return;
 
             case "PING":
@@ -154,35 +163,19 @@ public class TwitchChatClient : IrcClient
         }
     }
 
-    private async void Process376()
+    private async void Process376(WsConnection connection)
     {
+        // Если бот анонимный, ему не приходит GlobalUserState
+        // И приходится ориентироваться на что-то другое.
         if (!opts.Anonymous)
             return;
 
-        AuthFinished?.Invoke(this, null);
-
-        string[] channels;
-        lock (autoJoinChannels)
-            channels = autoJoinChannels.ToArray();
-
-        foreach (string channel in channels)
-        {
-            await JoinAsync(connection, channel);
-        }
+        await ProcessAuthAsync(connection, null);
     }
 
     private async void ProcessGlobalUserState(WsConnection connection, TwitchGlobalUserStateMessage message)
     {
-        AuthFinished?.Invoke(this, message);
-
-        string[] channels;
-        lock (autoJoinChannels)
-            channels = autoJoinChannels.ToArray();
-
-        foreach (string channel in channels)
-        {
-            await JoinAsync(connection, channel);
-        }
+        await ProcessAuthAsync(connection, message);
     }
 
     private async void ProcessPing(WsConnection connection, string text)
@@ -198,16 +191,25 @@ public class TwitchChatClient : IrcClient
     private void ProcessChannelJoined(string channel)
     {
         ChannelJoined?.Invoke(this, channel);
+
+        ChatAutoChannel? autoChannel = GetChannel(channel);
+        autoChannel?.OnChannelJoined();
     }
 
     private void ProcessPrivateMessage(TwitchPrivateMessage message)
     {
         PrivateMessageReceived?.Invoke(this, message);
+
+        ChatAutoChannel? autoChannel = GetChannel(message.channel);
+        autoChannel?.OnPrivateMessageReceived(message);
     }
 
     private void ProcessRoomState(TwitchRoomStateMessage message)
     {
         RoomStateReceived?.Invoke(this, message);
+
+        ChatAutoChannel? autoChannel = GetChannel(message.channel);
+        autoChannel?.OnRoomStateReceived(message);
     }
 
     private void ProcessNotice(TwitchNoticeMessage message)
@@ -220,11 +222,19 @@ public class TwitchChatClient : IrcClient
 
             AuthFailed?.Invoke(this, EventArgs.Empty);
         }
+        else if (message.channel != null)
+        {
+            ChatAutoChannel? autoChannel = GetChannel(message.channel);
+            autoChannel?.OnNoticeReceivedReceived(message);
+        }
     }
 
     private void ProcessClearChat(TwitchClearChatMessage message)
     {
         ClearChatReceived?.Invoke(this, message);
+
+        ChatAutoChannel? autoChannel = GetChannel(message.channel);
+        autoChannel?.OnClearChatReceived(message);
     }
 
     private async Task Pinging(PingManager pingManager, string text)
@@ -243,8 +253,30 @@ public class TwitchChatClient : IrcClient
         connection!.Dispose(new Exception("Ping Timeout"));
     }
 
+    private async Task ProcessAuthAsync(WsConnection connection, TwitchGlobalUserStateMessage? message)
+    {
+        AuthFinished?.Invoke(this, message);
+
+        ChatAutoChannel[] channels;
+        lock (autoChannels)
+            channels = autoChannels.ToArray();
+
+        foreach (var autoChannel in channels)
+        {
+            await JoinAsync(connection, autoChannel.channel);
+        }
+    }
+
     protected override void ConnectionDisposing(object? sender, Exception? e)
     {
+        lock (autoChannels)
+        {
+            foreach (var autoChannel in autoChannels)
+            {
+                autoChannel.IsJoined = false;
+            }
+        }
+
         if (pingManager != null)
         {
             pingManager.Pinging -= Pinging;
@@ -253,6 +285,12 @@ public class TwitchChatClient : IrcClient
         }
 
         base.ConnectionDisposing(sender, e);
+    }
+
+    private ChatAutoChannel? GetChannel(string channelName)
+    {
+        lock (autoChannels)
+            return autoChannels.FirstOrDefault(c => c.channel.Equals(channelName, StringComparison.InvariantCultureIgnoreCase));
     }
 
     public static string GenerateAnonymName()
