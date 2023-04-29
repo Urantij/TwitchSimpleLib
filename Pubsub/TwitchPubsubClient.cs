@@ -122,6 +122,25 @@ public class TwitchPubsubClient : BaseClient
         return autoTopic;
     }
 
+    /// <summary>
+    /// Можно использовать после запуска бота.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="channelTwitchId"></param>
+    /// <param name="topic"></param>
+    /// <returns></returns>
+    public async Task<PubsubAutoTopic<T>> AddAutoTopicAsync<T>(string channelTwitchId, string topic)
+    {
+        var autoTopic = AddTopic<T>(channelTwitchId, topic);
+
+        if (IsConnected)
+        {
+            await ListenAsync(new[] { autoTopic.MakeFullTopic() });
+        }
+
+        return autoTopic;
+    }
+
     public async Task RemoveAutoTopicAsync(PubsubAutoTopic autoTopic)
     {
         bool removed;
