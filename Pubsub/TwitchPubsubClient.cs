@@ -15,14 +15,13 @@ namespace TwitchSimpleLib.Pubsub;
 
 public class TwitchPubsubClient : BaseClient
 {
+    public const string predictionsTopic = "predictions-channel-v1";
+    public const string videoPlaybackTopic = "video-playback-by-id";
+    public const string broadcastSettingsTopic = "broadcast-settings-update";
+
     public static readonly Uri url = new("wss://pubsub-edge.twitch.tv");
 
-    public event Action<(string channelId, PredictionPayload)>? PredictionReceived;
-    public event Action<(string channelId, PlaybackData)>? PlaybackReceived;
-    public event Action<(string channelId, BroadcastSettingsData)>? BroadcastSettingsReceived;
-
-    private readonly List<string> topics = new();
-
+    private readonly List<PubsubAutoTopic> autoTopics = new();
     private PingManager? pingManager;
 
     private readonly TwitchPubsubClientOpts opts;
@@ -38,19 +37,159 @@ public class TwitchPubsubClient : BaseClient
         this.opts = opts;
     }
 
-    public void AddPredictionsTopic(string channelTwitchId)
+    /// <summary>
+    /// Использовать перед запуском бота.
+    /// </summary>
+    /// <param name="channelTwitchId"></param>
+    public PubsubAutoTopic<PredictionPayload> AddPredictionsTopic(string channelTwitchId)
     {
-        topics.Add("predictions-channel-v1." + channelTwitchId);
+        return AddTopic<PredictionPayload>(channelTwitchId, predictionsTopic);
     }
 
-    public void AddPlaybackTopic(string channelTwitchId)
+    /// <summary>
+    /// Использовать перед запуском бота.
+    /// </summary>
+    /// <param name="channelTwitchId"></param>
+    public PubsubAutoTopic<PlaybackData> AddPlaybackTopic(string channelTwitchId)
     {
-        topics.Add("video-playback-by-id." + channelTwitchId);
+        return AddTopic<PlaybackData>(channelTwitchId, videoPlaybackTopic);
     }
 
-    public void AddBroadcastSettingsTopic(string channelTwitchId)
+    /// <summary>
+    /// Использовать перед запуском бота.
+    /// </summary>
+    /// <param name="channelTwitchId"></param>
+    public PubsubAutoTopic<BroadcastSettingsData> AddBroadcastSettingsTopic(string channelTwitchId)
     {
-        topics.Add("broadcast-settings-update." + channelTwitchId);
+        return AddTopic<BroadcastSettingsData>(channelTwitchId, broadcastSettingsTopic);
+    }
+
+    /// <summary>
+    /// Использовать перед запуском бота.
+    /// </summary>
+    /// <param name="channelTwitchId"></param>
+    /// <param name="topic"></param>
+    /// <returns></returns>
+    public PubsubAutoTopic AddTopic(string channelTwitchId, string topic)
+    {
+        PubsubAutoTopic autoTopic = new(channelTwitchId, topic, this);
+
+        lock (autoTopics)
+        {
+            autoTopics.Add(autoTopic);
+        }
+
+        return autoTopic;
+    }
+
+    /// <summary>
+    /// Использовать перед запуском бота.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="channelTwitchId"></param>
+    /// <param name="topic"></param>
+    /// <returns></returns>
+    public PubsubAutoTopic<T> AddTopic<T>(string channelTwitchId, string topic)
+    {
+        PubsubAutoTopic<T> autoTopic = new(channelTwitchId, topic, this);
+
+        autoTopic.RawDataReceived += (rawData) =>
+        {
+            var data = JsonSerializer.Deserialize<T>(rawData)!;
+            autoTopic.OnDataReceived(data);
+        };
+
+        lock (autoTopics)
+        {
+            autoTopics.Add(autoTopic);
+        }
+
+        return autoTopic;
+    }
+
+    /// <summary>
+    /// Можно использовать после запуска бота.
+    /// </summary>
+    public async Task<PubsubAutoTopic> AddAutoTopicAsync(string channelTwitchId, string topic)
+    {
+        var autoTopic = AddTopic(channelTwitchId, topic);
+
+        if (IsConnected)
+        {
+            await ListenAsync(new[] { autoTopic.MakeFullTopic() });
+        }
+
+        return autoTopic;
+    }
+
+    public async Task RemoveAutoTopicAsync(PubsubAutoTopic autoTopic)
+    {
+        bool removed;
+
+        lock (autoTopics)
+        {
+            removed = autoTopics.Remove(autoTopic);
+        }
+
+        if (!removed)
+        {
+            _logger?.LogWarning("Попытка удалить автотопик, которого уже нет. {topic}.{channel}", autoTopic.topic, autoTopic.channelTwitchId);
+        }
+
+        if (!IsConnected)
+            return;
+
+        await UnListenAsync(new[] { autoTopic.MakeFullTopic() });
+    }
+
+    public async Task RemoveAutoTopicsAsync(IEnumerable<PubsubAutoTopic> autoTopicsToRemove)
+    {
+        List<string> topics = new();
+
+        foreach (var autoTopic in autoTopicsToRemove)
+        {
+            bool removed;
+
+            lock (autoTopics)
+            {
+                removed = autoTopics.Remove(autoTopic);
+            }
+
+            if (!removed)
+            {
+                _logger?.LogWarning("Попытка удалить автотопик, которого уже нет. {topic}.{channel}", autoTopic.topic, autoTopic.channelTwitchId);
+            }
+
+            topics.Add(autoTopic.MakeFullTopic());
+        }
+
+        if (!IsConnected)
+            return;
+
+        await UnListenAsync(topics);
+    }
+
+    /// <summary>
+    /// Удаление всех топиков по айди канала.
+    /// </summary>
+    /// <param name="channelTwitchId"></param>
+    /// <returns></returns>
+    public async Task<PubsubAutoTopic[]> RemoveAutoTopicsAsync(string channelTwitchId)
+    {
+        PubsubAutoTopic[] autoTopicsToRemove;
+        lock (autoTopics)
+        {
+            autoTopicsToRemove = autoTopics.Where(at => at.channelTwitchId == channelTwitchId).ToArray();
+        }
+
+        if (IsConnected && autoTopicsToRemove.Length > 0)
+        {
+            var topics = autoTopicsToRemove.Select(at => at.MakeFullTopic()).ToArray();
+
+            await UnListenAsync(topics);
+        }
+
+        return autoTopicsToRemove;
     }
 
     public Task SendMessageAsync(BasePubsubMessage messageObject)
@@ -63,13 +202,26 @@ public class TwitchPubsubClient : BaseClient
         return SendRawAsync(caller, messageString);
     }
 
+    private async Task ListenAsync(IEnumerable<string> topics)
+    {
+        PubsubListenMessage listenMessage = new(new PubsubListenMessage.ListenData(topics, opts.OauthToken), "Starting");
+
+        await SendMessageAsync(connection, listenMessage);
+    }
+
+    private async Task UnListenAsync(IEnumerable<string> topics)
+    {
+        PubsubUnlistenMessage listenMessage = new(new PubsubUnlistenMessage.ListenData(topics, opts.OauthToken), "Starting");
+
+        await SendMessageAsync(connection, listenMessage);
+    }
+
     protected override async Task ConnectedAsync(WsConnection connection)
     {
         await base.ConnectedAsync(connection);
 
-        PubsubListenMessage listenMessage = new(new PubsubListenMessage.ListenData(topics, opts.OauthToken), "Starting");
-
-        await SendMessageAsync(connection, listenMessage);
+        var topics = autoTopics.Select(auto => auto.MakeFullTopic()).ToArray();
+        await ListenAsync(topics);
 
         pingManager = new(false, opts.PingDelay, opts.PingTimeout);
         pingManager.Pinging += Pinging;
@@ -146,29 +298,19 @@ public class TwitchPubsubClient : BaseClient
 
         string unescapedMessage = message.Data.Message.Replace("\\\"", "\"");
 
-        switch (topic)
+        PubsubAutoTopic? autoTopic;
+        lock (autoTopics)
         {
-            case "predictions-channel-v1":
-                {
-                    var data = JsonSerializer.Deserialize<PredictionPayload>(unescapedMessage)!;
+            autoTopic = autoTopics.FirstOrDefault(at => at.channelTwitchId == channelId && at.topic == topic);
+        }
 
-                    PredictionReceived?.Invoke((channelId, data));
-                }
-                return;
-            case "video-playback-by-id":
-                {
-                    var data = JsonSerializer.Deserialize<PlaybackData>(unescapedMessage)!;
-
-                    PlaybackReceived?.Invoke((channelId, data));
-                }
-                return;
-            case "broadcast-settings-update":
-                {
-                    var data = JsonSerializer.Deserialize<BroadcastSettingsData>(unescapedMessage)!;
-
-                    BroadcastSettingsReceived?.Invoke((channelId, data));
-                }
-                return;
+        if (autoTopic != null)
+        {
+            autoTopic.OnRawDataReceived(unescapedMessage);
+        }
+        else
+        {
+            _logger?.LogError("Пришло сообщение по неизвестному автотопику {topic}.{channel}", topic, channelId);
         }
     }
 
