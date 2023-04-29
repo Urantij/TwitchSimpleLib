@@ -247,8 +247,20 @@ public class TwitchPubsubClient : BaseClient
     {
         await base.ConnectedAsync(connection);
 
-        var topics = autoTopics.Select(auto => auto.MakeFullTopic()).ToArray();
-        await ListenAsync(topics);
+        string[] topics;
+        lock (autoTopics)
+        {
+            topics = autoTopics.Select(auto => auto.MakeFullTopic()).ToArray();
+        }
+
+        if (topics.Length > 0)
+        {
+            await ListenAsync(topics);
+        }
+        else
+        {
+            _logger?.LogWarning("Клиент обязан подписаться на какой-нибудь топик в течение 15 секунд после подключения. Но никаких топиков на данный момент нет.");
+        }
 
         pingManager = new(false, opts.PingDelay, opts.PingTimeout);
         pingManager.Pinging += Pinging;
