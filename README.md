@@ -4,7 +4,7 @@
 ### Как
 
 Чат
-```
+```cs
 TwitchChatClient chatClient = new(true, new TwitchChatClientOpts("Username", "oauth:token"), loggerFactory);
 chatClient.AuthFailed += AuthFailed;
 
@@ -16,7 +16,7 @@ await chatClient.ConnectAsync();
 ```
 
 Пабсаб
-```
+```cs
 TwitchPubsubClient pubsubClient = new(new TwitchPubsubClientOpts(), loggerFactory);
 
 var topic1 = pubsubClient.AddBroadcastSettingsTopic("100596648");
