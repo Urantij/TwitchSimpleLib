@@ -37,6 +37,14 @@ public class TwitchPubsubClient : BaseClient
         this.opts = opts;
     }
 
+    public int CountTopics()
+    {
+        lock (autoTopics)
+        {
+            return autoTopics.Count;
+        }
+    }
+
     /// <summary>
     /// Использовать перед запуском бота.
     /// </summary>

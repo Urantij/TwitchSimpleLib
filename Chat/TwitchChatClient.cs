@@ -47,13 +47,18 @@ public class TwitchChatClient : IrcClient
     }
 
     /// <summary>
-    /// Использовать перед <see cref="ConnectedAsync"/>
+    /// Использовать перед запуском бота.
     /// </summary>
     /// <param name="channel"></param>
     /// <returns></returns>
     public ChatAutoChannel AddAutoJoinChannel(string channel)
     {
-        ChatAutoChannel autoChannel = new(channel, this);
+        ChatAutoChannel? autoChannel = GetChannel(channel);
+
+        if (autoChannel != null)
+            return autoChannel;
+
+        autoChannel = new(channel, this);
 
         lock (autoChannels)
         {

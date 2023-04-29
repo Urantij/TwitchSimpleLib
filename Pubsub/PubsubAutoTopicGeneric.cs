@@ -11,6 +11,9 @@ namespace TwitchSimpleLib.Pubsub;
 // А ещё можно тупо хранить тип в поле. Ну а че.
 // TODO подумать, мб рефлексия это и неплохо.
 
+/// <summary>
+/// Хранит ссылку на клиент бота, аккуратно.
+/// </summary>
 public class PubsubAutoTopic<T> : PubsubAutoTopic
 {
     public Action<T>? DataReceived;
