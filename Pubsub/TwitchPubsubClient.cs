@@ -149,6 +149,29 @@ public class TwitchPubsubClient : BaseClient
         return autoTopic;
     }
 
+    /// <summary>
+    /// Можно использовать после запуска бота.
+    /// Асинхронная часть будет запущена отдельным таском.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
+    /// <param name="channelTwitchId"></param>
+    /// <param name="topic"></param>
+    /// <returns></returns>
+    public PubsubAutoTopic<T> AddAutoTopic<T>(string channelTwitchId, string topic)
+    {
+        var autoTopic = AddTopic<T>(channelTwitchId, topic);
+
+        if (IsConnected)
+        {
+            Task.Run(async () =>
+            {
+                await ListenAsync(new[] { autoTopic.MakeFullTopic() });
+            });
+        }
+
+        return autoTopic;
+    }
+
     public async Task RemoveAutoTopicAsync(PubsubAutoTopic autoTopic)
     {
         bool removed;
@@ -167,6 +190,34 @@ public class TwitchPubsubClient : BaseClient
             return;
 
         await UnListenAsync(new[] { autoTopic.MakeFullTopic() });
+    }
+
+    /// <summary>
+    /// Асинхронная часть будет запущена отдельным таском.
+    /// </summary>
+    /// <param name="autoTopic"></param>
+    /// <returns></returns>
+    public void RemoveAutoTopic(PubsubAutoTopic autoTopic)
+    {
+        bool removed;
+
+        lock (autoTopics)
+        {
+            removed = autoTopics.Remove(autoTopic);
+        }
+
+        if (!removed)
+        {
+            _logger?.LogWarning("Попытка удалить автотопик, которого уже нет. {topic}.{channel}", autoTopic.topic, autoTopic.channelTwitchId);
+        }
+
+        if (!IsConnected)
+            return;
+
+        Task.Run(async () =>
+        {
+            await UnListenAsync(new[] { autoTopic.MakeFullTopic() });
+        });
     }
 
     public async Task RemoveAutoTopicsAsync(IEnumerable<PubsubAutoTopic> autoTopicsToRemove)
@@ -197,6 +248,41 @@ public class TwitchPubsubClient : BaseClient
     }
 
     /// <summary>
+    /// Асинхронная часть будет запущена отдельным таском.
+    /// </summary>
+    /// <param name="autoTopicsToRemove"></param>
+    /// <returns></returns>
+    public void RemoveAutoTopics(IEnumerable<PubsubAutoTopic> autoTopicsToRemove)
+    {
+        List<string> topics = new();
+
+        foreach (var autoTopic in autoTopicsToRemove)
+        {
+            bool removed;
+
+            lock (autoTopics)
+            {
+                removed = autoTopics.Remove(autoTopic);
+            }
+
+            if (!removed)
+            {
+                _logger?.LogWarning("Попытка удалить автотопик, которого уже нет. {topic}.{channel}", autoTopic.topic, autoTopic.channelTwitchId);
+            }
+
+            topics.Add(autoTopic.MakeFullTopic());
+        }
+
+        if (!IsConnected)
+            return;
+
+        Task.Run(async () =>
+        {
+            await UnListenAsync(topics);
+        });
+    }
+
+    /// <summary>
     /// Удаление всех топиков по айди канала.
     /// </summary>
     /// <param name="channelTwitchId"></param>
@@ -214,6 +300,33 @@ public class TwitchPubsubClient : BaseClient
             var topics = autoTopicsToRemove.Select(at => at.MakeFullTopic()).ToArray();
 
             await UnListenAsync(topics);
+        }
+
+        return autoTopicsToRemove;
+    }
+
+    /// <summary>
+    /// Удаление всех топиков по айди канала.
+    /// Асинхронная часть будет запущена отдельным таском.
+    /// </summary>
+    /// <param name="channelTwitchId"></param>
+    /// <returns></returns>
+    public PubsubAutoTopic[] RemoveAutoTopics(string channelTwitchId)
+    {
+        PubsubAutoTopic[] autoTopicsToRemove;
+        lock (autoTopics)
+        {
+            autoTopicsToRemove = autoTopics.Where(at => at.channelTwitchId == channelTwitchId).ToArray();
+        }
+
+        if (IsConnected && autoTopicsToRemove.Length > 0)
+        {
+            var topics = autoTopicsToRemove.Select(at => at.MakeFullTopic()).ToArray();
+
+            Task.Run(async () =>
+            {
+                await UnListenAsync(topics);
+            });
         }
 
         return autoTopicsToRemove;

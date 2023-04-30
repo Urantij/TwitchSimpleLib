@@ -95,6 +95,37 @@ public class TwitchChatClient : IrcClient
         return autoChannel;
     }
 
+    /// <summary>
+    /// Можно использовать после старта бота.
+    /// Асинхронная часть будет запущена отдельным таском.
+    /// </summary>
+    /// <param name="channel"></param>
+    /// <returns></returns>
+    public ChatAutoChannel AddAutoChannel(string channel)
+    {
+        ChatAutoChannel? autoChannel = GetChannel(channel);
+
+        if (autoChannel != null)
+            return autoChannel;
+
+        autoChannel = new(channel, this);
+
+        lock (autoChannels)
+        {
+            autoChannels.Add(autoChannel);
+        }
+
+        if (IsConnected)
+        {
+            Task.Run(async () =>
+            {
+                await JoinAsync(channel);
+            });
+        }
+
+        return autoChannel;
+    }
+
     public async Task<bool> RemoveAutoChannelAsync(ChatAutoChannel autoChannel)
     {
         bool removed;
@@ -111,6 +142,30 @@ public class TwitchChatClient : IrcClient
         return removed;
     }
 
+    /// <summary>
+    /// Асинхронная часть будет запущена отдельным таском.
+    /// </summary>
+    /// <param name="autoChannel"></param>
+    /// <returns></returns>
+    public bool RemoveAutoChannel(ChatAutoChannel autoChannel)
+    {
+        bool removed;
+        lock (autoChannels)
+        {
+            removed = autoChannels.Remove(autoChannel);
+        }
+
+        if (removed && IsConnected)
+        {
+            Task.Run(async () =>
+            {
+                await LeaveAsync(autoChannel.channel);
+            });
+        }
+
+        return removed;
+    }
+
     public Task<bool> RemoveAutoChannelAsync(string channel)
     {
         ChatAutoChannel? autoChannel = GetChannel(channel);
@@ -118,6 +173,20 @@ public class TwitchChatClient : IrcClient
             return Task.FromResult(false);
 
         return RemoveAutoChannelAsync(autoChannel);
+    }
+
+    /// <summary>
+    /// Асинхронная часть будет запущена отдельным таском.
+    /// </summary>
+    /// <param name="channel"></param>
+    /// <returns></returns>
+    public bool RemoveAutoChannel(string channel)
+    {
+        ChatAutoChannel? autoChannel = GetChannel(channel);
+        if (autoChannel == null)
+            return false;
+
+        return RemoveAutoChannel(autoChannel);
     }
 
     public Task SendMessageAsync(string channel, string text)
