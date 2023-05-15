@@ -29,7 +29,7 @@ public class TwitchChatClient : IrcClient
     public event EventHandler<TwitchNoticeMessage>? NoticeReceived;
     public event EventHandler<TwitchClearChatMessage>? ClearChatReceived;
 
-    private readonly TwitchChatClientOpts opts;
+    public readonly TwitchChatClientOpts opts;
 
     private readonly List<ChatAutoChannel> autoChannels = new();
     private PingManager? pingManager;

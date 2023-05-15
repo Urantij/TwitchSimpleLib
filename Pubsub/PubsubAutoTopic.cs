@@ -12,19 +12,16 @@ public class PubsubAutoTopic
 {
     public readonly string channelTwitchId;
 
-    /// <summary>
-    /// Просто топик, без айди канала.
-    /// </summary>
-    public readonly string topic;
+    public readonly string fullTopic;
 
     public readonly TwitchPubsubClient client;
 
     public Action<string>? RawDataReceived;
 
-    public PubsubAutoTopic(string channelTwitchId, string topic, TwitchPubsubClient client)
+    public PubsubAutoTopic(string channelTwitchId, string fullTopic, TwitchPubsubClient client)
     {
         this.channelTwitchId = channelTwitchId;
-        this.topic = topic;
+        this.fullTopic = fullTopic;
         this.client = client;
     }
 
@@ -35,11 +32,4 @@ public class PubsubAutoTopic
     {
         RawDataReceived?.Invoke(data);
     }
-
-    /// <summary>
-    /// "<see cref="topic"/>.<see cref="channelTwitchId"/>"
-    /// </summary>
-    /// <returns></returns>
-    public string MakeFullTopic()
-        => $"{topic}.{channelTwitchId}";
 }

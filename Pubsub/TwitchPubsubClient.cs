@@ -24,7 +24,7 @@ public class TwitchPubsubClient : BaseClient
     private readonly List<PubsubAutoTopic> autoTopics = new();
     private PingManager? pingManager;
 
-    private readonly TwitchPubsubClientOpts opts;
+    public readonly TwitchPubsubClientOpts opts;
 
     public TwitchPubsubClient(TwitchPubsubClientOpts opts, ILoggerFactory? loggerFactory)
         : this(url, opts, loggerFactory)
@@ -51,7 +51,7 @@ public class TwitchPubsubClient : BaseClient
     /// <param name="channelTwitchId"></param>
     public PubsubAutoTopic<PredictionPayload> AddPredictionsTopic(string channelTwitchId)
     {
-        return AddTopic<PredictionPayload>(channelTwitchId, predictionsTopic);
+        return AddManualTopic<PredictionPayload>(channelTwitchId, $"{predictionsTopic}.{channelTwitchId}");
     }
 
     /// <summary>
@@ -60,7 +60,7 @@ public class TwitchPubsubClient : BaseClient
     /// <param name="channelTwitchId"></param>
     public PubsubAutoTopic<PlaybackData> AddPlaybackTopic(string channelTwitchId)
     {
-        return AddTopic<PlaybackData>(channelTwitchId, videoPlaybackTopic);
+        return AddManualTopic<PlaybackData>(channelTwitchId, $"{videoPlaybackTopic}.{channelTwitchId}");
     }
 
     /// <summary>
@@ -69,18 +69,18 @@ public class TwitchPubsubClient : BaseClient
     /// <param name="channelTwitchId"></param>
     public PubsubAutoTopic<BroadcastSettingsData> AddBroadcastSettingsTopic(string channelTwitchId)
     {
-        return AddTopic<BroadcastSettingsData>(channelTwitchId, broadcastSettingsTopic);
+        return AddManualTopic<BroadcastSettingsData>(channelTwitchId, $"{broadcastSettingsTopic}.{channelTwitchId}");
     }
 
     /// <summary>
     /// Использовать перед запуском бота.
     /// </summary>
     /// <param name="channelTwitchId"></param>
-    /// <param name="topic"></param>
+    /// <param name="fullTopic">Полный топик, включающий и ключ и параметры.</param>
     /// <returns></returns>
-    public PubsubAutoTopic AddTopic(string channelTwitchId, string topic)
+    public PubsubAutoTopic AddManualTopic(string channelTwitchId, string fullTopic)
     {
-        PubsubAutoTopic autoTopic = new(channelTwitchId, topic, this);
+        PubsubAutoTopic autoTopic = new(channelTwitchId, fullTopic, this);
 
         lock (autoTopics)
         {
@@ -95,11 +95,11 @@ public class TwitchPubsubClient : BaseClient
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="channelTwitchId"></param>
-    /// <param name="topic"></param>
+    /// <param name="fullTopic">Полный топик, включающий и ключ и параметры.</param>
     /// <returns></returns>
-    public PubsubAutoTopic<T> AddTopic<T>(string channelTwitchId, string topic)
+    public PubsubAutoTopic<T> AddManualTopic<T>(string channelTwitchId, string fullTopic)
     {
-        PubsubAutoTopic<T> autoTopic = new(channelTwitchId, topic, this);
+        PubsubAutoTopic<T> autoTopic = new(channelTwitchId, fullTopic, this);
 
         autoTopic.RawDataReceived += (rawData) =>
         {
@@ -118,13 +118,15 @@ public class TwitchPubsubClient : BaseClient
     /// <summary>
     /// Можно использовать после запуска бота.
     /// </summary>
-    public async Task<PubsubAutoTopic> AddAutoTopicAsync(string channelTwitchId, string topic)
+    /// <param name="channelTwitchId"></param>
+    /// <param name="fullTopic">Полный топик, включающий и ключ и параметры.</param>
+    public async Task<PubsubAutoTopic> AddManualAutoTopicAsync(string channelTwitchId, string fullTopic)
     {
-        var autoTopic = AddTopic(channelTwitchId, topic);
+        var autoTopic = AddManualTopic(channelTwitchId, fullTopic);
 
         if (IsConnected)
         {
-            await ListenAsync(new[] { autoTopic.MakeFullTopic() });
+            await ListenAsync(new[] { autoTopic.fullTopic });
         }
 
         return autoTopic;
@@ -135,15 +137,15 @@ public class TwitchPubsubClient : BaseClient
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="channelTwitchId"></param>
-    /// <param name="topic"></param>
+    /// <param name="fullTopic">Полный топик, включающий и ключ и параметры.</param>
     /// <returns></returns>
-    public async Task<PubsubAutoTopic<T>> AddAutoTopicAsync<T>(string channelTwitchId, string topic)
+    public async Task<PubsubAutoTopic<T>> AddManualAutoTopicAsync<T>(string channelTwitchId, string fullTopic)
     {
-        var autoTopic = AddTopic<T>(channelTwitchId, topic);
+        var autoTopic = AddManualTopic<T>(channelTwitchId, fullTopic);
 
         if (IsConnected)
         {
-            await ListenAsync(new[] { autoTopic.MakeFullTopic() });
+            await ListenAsync(new[] { autoTopic.fullTopic });
         }
 
         return autoTopic;
@@ -155,17 +157,17 @@ public class TwitchPubsubClient : BaseClient
     /// </summary>
     /// <typeparam name="T"></typeparam>
     /// <param name="channelTwitchId"></param>
-    /// <param name="topic"></param>
+    /// <param name="fullTopic">Полный топик, включающий и ключ и параметры.</param>
     /// <returns></returns>
-    public PubsubAutoTopic<T> AddAutoTopic<T>(string channelTwitchId, string topic)
+    public PubsubAutoTopic<T> AddManualAutoTopic<T>(string channelTwitchId, string fullTopic)
     {
-        var autoTopic = AddTopic<T>(channelTwitchId, topic);
+        var autoTopic = AddManualTopic<T>(channelTwitchId, fullTopic);
 
         if (IsConnected)
         {
             Task.Run(async () =>
             {
-                await ListenAsync(new[] { autoTopic.MakeFullTopic() });
+                await ListenAsync(new[] { autoTopic.fullTopic });
             });
         }
 
@@ -183,13 +185,13 @@ public class TwitchPubsubClient : BaseClient
 
         if (!removed)
         {
-            _logger?.LogWarning("Попытка удалить автотопик, которого уже нет. {topic}.{channel}", autoTopic.topic, autoTopic.channelTwitchId);
+            _logger?.LogWarning("Попытка удалить автотопик, которого уже нет. {topic}", autoTopic.fullTopic);
         }
 
         if (!IsConnected)
             return;
 
-        await UnListenAsync(new[] { autoTopic.MakeFullTopic() });
+        await UnListenAsync(new[] { autoTopic.fullTopic });
     }
 
     /// <summary>
@@ -208,7 +210,7 @@ public class TwitchPubsubClient : BaseClient
 
         if (!removed)
         {
-            _logger?.LogWarning("Попытка удалить автотопик, которого уже нет. {topic}.{channel}", autoTopic.topic, autoTopic.channelTwitchId);
+            _logger?.LogWarning("Попытка удалить автотопик, которого уже нет. {topic}", autoTopic.fullTopic);
         }
 
         if (!IsConnected)
@@ -216,7 +218,7 @@ public class TwitchPubsubClient : BaseClient
 
         Task.Run(async () =>
         {
-            await UnListenAsync(new[] { autoTopic.MakeFullTopic() });
+            await UnListenAsync(new[] { autoTopic.fullTopic });
         });
     }
 
@@ -235,10 +237,10 @@ public class TwitchPubsubClient : BaseClient
 
             if (!removed)
             {
-                _logger?.LogWarning("Попытка удалить автотопик, которого уже нет. {topic}.{channel}", autoTopic.topic, autoTopic.channelTwitchId);
+                _logger?.LogWarning("Попытка удалить автотопик, которого уже нет. {topic}", autoTopic.fullTopic);
             }
 
-            topics.Add(autoTopic.MakeFullTopic());
+            topics.Add(autoTopic.fullTopic);
         }
 
         if (!IsConnected)
@@ -267,10 +269,10 @@ public class TwitchPubsubClient : BaseClient
 
             if (!removed)
             {
-                _logger?.LogWarning("Попытка удалить автотопик, которого уже нет. {topic}.{channel}", autoTopic.topic, autoTopic.channelTwitchId);
+                _logger?.LogWarning("Попытка удалить автотопик, которого уже нет. {topic}", autoTopic.fullTopic);
             }
 
-            topics.Add(autoTopic.MakeFullTopic());
+            topics.Add(autoTopic.fullTopic);
         }
 
         if (!IsConnected)
@@ -297,7 +299,7 @@ public class TwitchPubsubClient : BaseClient
 
         if (IsConnected && autoTopicsToRemove.Length > 0)
         {
-            var topics = autoTopicsToRemove.Select(at => at.MakeFullTopic()).ToArray();
+            var topics = autoTopicsToRemove.Select(at => at.fullTopic).ToArray();
 
             await UnListenAsync(topics);
         }
@@ -321,7 +323,7 @@ public class TwitchPubsubClient : BaseClient
 
         if (IsConnected && autoTopicsToRemove.Length > 0)
         {
-            var topics = autoTopicsToRemove.Select(at => at.MakeFullTopic()).ToArray();
+            var topics = autoTopicsToRemove.Select(at => at.fullTopic).ToArray();
 
             Task.Run(async () =>
             {
@@ -363,7 +365,7 @@ public class TwitchPubsubClient : BaseClient
         string[] topics;
         lock (autoTopics)
         {
-            topics = autoTopics.Select(auto => auto.MakeFullTopic()).ToArray();
+            topics = autoTopics.Select(auto => auto.fullTopic).ToArray();
         }
 
         if (topics.Length > 0)
@@ -439,21 +441,12 @@ public class TwitchPubsubClient : BaseClient
 
     private void ProcessMessage(PubsubMessage message)
     {
-        string topic;
-        string channelId;
-
-        {
-            string[] split = message.Data.Topic.Split('.');
-            topic = split[0];
-            channelId = split[1];
-        }
-
         string unescapedMessage = message.Data.Message.Replace("\\\"", "\"");
 
         PubsubAutoTopic? autoTopic;
         lock (autoTopics)
         {
-            autoTopic = autoTopics.FirstOrDefault(at => at.channelTwitchId == channelId && at.topic == topic);
+            autoTopic = autoTopics.FirstOrDefault(at => at.fullTopic == message.Data.Topic);
         }
 
         if (autoTopic != null)
@@ -462,7 +455,7 @@ public class TwitchPubsubClient : BaseClient
         }
         else
         {
-            _logger?.LogError("Пришло сообщение по неизвестному автотопику {topic}.{channel}", topic, channelId);
+            _logger?.LogError("Пришло сообщение по неизвестному автотопику {topic}", message.Data.Topic);
         }
     }
 
