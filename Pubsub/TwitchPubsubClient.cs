@@ -353,7 +353,7 @@ public class TwitchPubsubClient : BaseClient
 
     private async Task UnListenAsync(IEnumerable<string> topics)
     {
-        PubsubUnlistenMessage listenMessage = new(new PubsubUnlistenMessage.ListenData(topics, opts.OauthToken), "Starting");
+        PubsubUnlistenMessage listenMessage = new(new PubsubUnlistenMessage.ListenData(topics), "Starting");
 
         await SendMessageAsync(connection, listenMessage);
     }

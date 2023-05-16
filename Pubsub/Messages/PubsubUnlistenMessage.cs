@@ -12,13 +12,10 @@ public class PubsubUnlistenMessage : BasePubsubMessage
     {
         [JsonPropertyName("topics")]
         public IEnumerable<string> Topics { get; set; }
-        [JsonPropertyName("auth_token")]
-        public string? AuthToken { get; set; }
 
-        public ListenData(IEnumerable<string> topics, string? authToken)
+        public ListenData(IEnumerable<string> topics)
         {
             Topics = topics;
-            AuthToken = authToken;
         }
     }
 
