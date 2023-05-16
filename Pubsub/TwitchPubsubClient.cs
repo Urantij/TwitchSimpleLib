@@ -77,10 +77,11 @@ public class TwitchPubsubClient : BaseClient
     /// </summary>
     /// <param name="channelTwitchId"></param>
     /// <param name="fullTopic">Полный топик, включающий и ключ и параметры.</param>
+    /// <param name="token">Если указан, будет использоваться этот токен для аутентификации топика.</param>
     /// <returns></returns>
-    public PubsubAutoTopic AddManualTopic(string channelTwitchId, string fullTopic)
+    public PubsubAutoTopic AddManualTopic(string channelTwitchId, string fullTopic, string? token = null)
     {
-        PubsubAutoTopic autoTopic = new(channelTwitchId, fullTopic, this);
+        PubsubAutoTopic autoTopic = new(channelTwitchId, fullTopic, token, this);
 
         lock (autoTopics)
         {
@@ -96,10 +97,11 @@ public class TwitchPubsubClient : BaseClient
     /// <typeparam name="T"></typeparam>
     /// <param name="channelTwitchId"></param>
     /// <param name="fullTopic">Полный топик, включающий и ключ и параметры.</param>
+    /// <param name="token">Если указан, будет использоваться этот токен для аутентификации топика.</param>
     /// <returns></returns>
-    public PubsubAutoTopic<T> AddManualTopic<T>(string channelTwitchId, string fullTopic)
+    public PubsubAutoTopic<T> AddManualTopic<T>(string channelTwitchId, string fullTopic, string? token = null)
     {
-        PubsubAutoTopic<T> autoTopic = new(channelTwitchId, fullTopic, this);
+        PubsubAutoTopic<T> autoTopic = new(channelTwitchId, fullTopic, token, this);
 
         autoTopic.RawDataReceived += (rawData) =>
         {
@@ -120,13 +122,14 @@ public class TwitchPubsubClient : BaseClient
     /// </summary>
     /// <param name="channelTwitchId"></param>
     /// <param name="fullTopic">Полный топик, включающий и ключ и параметры.</param>
-    public async Task<PubsubAutoTopic> AddManualAutoTopicAsync(string channelTwitchId, string fullTopic)
+    /// <param name="token">Если указан, будет использоваться этот токен для аутентификации топика.</param>
+    public async Task<PubsubAutoTopic> AddManualAutoTopicAsync(string channelTwitchId, string fullTopic, string? token = null)
     {
-        var autoTopic = AddManualTopic(channelTwitchId, fullTopic);
+        var autoTopic = AddManualTopic(channelTwitchId, fullTopic, token);
 
         if (IsConnected)
         {
-            await ListenAsync(new[] { autoTopic.fullTopic });
+            await ListenAsync(new[] { autoTopic.fullTopic }, token);
         }
 
         return autoTopic;
@@ -138,14 +141,15 @@ public class TwitchPubsubClient : BaseClient
     /// <typeparam name="T"></typeparam>
     /// <param name="channelTwitchId"></param>
     /// <param name="fullTopic">Полный топик, включающий и ключ и параметры.</param>
+    /// <param name="token">Если указан, будет использоваться этот токен для аутентификации топика.</param>
     /// <returns></returns>
-    public async Task<PubsubAutoTopic<T>> AddManualAutoTopicAsync<T>(string channelTwitchId, string fullTopic)
+    public async Task<PubsubAutoTopic<T>> AddManualAutoTopicAsync<T>(string channelTwitchId, string fullTopic, string? token)
     {
-        var autoTopic = AddManualTopic<T>(channelTwitchId, fullTopic);
+        var autoTopic = AddManualTopic<T>(channelTwitchId, fullTopic, token);
 
         if (IsConnected)
         {
-            await ListenAsync(new[] { autoTopic.fullTopic });
+            await ListenAsync(new[] { autoTopic.fullTopic }, token);
         }
 
         return autoTopic;
@@ -158,16 +162,17 @@ public class TwitchPubsubClient : BaseClient
     /// <typeparam name="T"></typeparam>
     /// <param name="channelTwitchId"></param>
     /// <param name="fullTopic">Полный топик, включающий и ключ и параметры.</param>
+    /// <param name="token">Если указан, будет использоваться этот токен для аутентификации топика.</param>
     /// <returns></returns>
-    public PubsubAutoTopic<T> AddManualAutoTopic<T>(string channelTwitchId, string fullTopic)
+    public PubsubAutoTopic<T> AddManualAutoTopic<T>(string channelTwitchId, string fullTopic, string? token)
     {
-        var autoTopic = AddManualTopic<T>(channelTwitchId, fullTopic);
+        var autoTopic = AddManualTopic<T>(channelTwitchId, fullTopic, token);
 
         if (IsConnected)
         {
             Task.Run(async () =>
             {
-                await ListenAsync(new[] { autoTopic.fullTopic });
+                await ListenAsync(new[] { autoTopic.fullTopic }, token);
             });
         }
 
@@ -344,9 +349,11 @@ public class TwitchPubsubClient : BaseClient
         return SendRawAsync(caller, messageString);
     }
 
-    private async Task ListenAsync(IEnumerable<string> topics)
+    private async Task ListenAsync(IEnumerable<string> topics, string? token)
     {
-        PubsubListenMessage listenMessage = new(new PubsubListenMessage.ListenData(topics, opts.OauthToken), "Starting");
+        token ??= opts.OauthToken;
+
+        PubsubListenMessage listenMessage = new(new PubsubListenMessage.ListenData(topics, token), "Starting");
 
         await SendMessageAsync(connection, listenMessage);
     }
@@ -362,15 +369,21 @@ public class TwitchPubsubClient : BaseClient
     {
         await base.ConnectedAsync(connection);
 
-        string[] topics;
+        (string? token, string[] topic)[] topicsTuples;
         lock (autoTopics)
         {
-            topics = autoTopics.Select(auto => auto.fullTopic).ToArray();
+            topicsTuples = autoTopics
+            .GroupBy(t => t.token ?? opts.OauthToken)
+            .Select(g => (g.Key ?? opts.OauthToken, g.Select(auto => auto.fullTopic).ToArray()))
+            .ToArray();
         }
 
-        if (topics.Length > 0)
+        if (topicsTuples.Length > 0)
         {
-            await ListenAsync(topics);
+            foreach (var (token, topic) in topicsTuples)
+            {
+                await ListenAsync(topic, token);
+            }
         }
         else
         {

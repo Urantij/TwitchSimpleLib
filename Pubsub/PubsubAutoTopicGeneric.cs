@@ -18,8 +18,8 @@ public class PubsubAutoTopic<T> : PubsubAutoTopic
 {
     public Action<T>? DataReceived;
 
-    public PubsubAutoTopic(string channelTwitchId, string topic, TwitchPubsubClient client)
-        : base(channelTwitchId, topic, client)
+    public PubsubAutoTopic(string channelTwitchId, string topic, string? token, TwitchPubsubClient client)
+        : base(channelTwitchId, topic, token, client)
     {
     }
 

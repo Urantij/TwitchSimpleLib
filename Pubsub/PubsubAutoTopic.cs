@@ -14,14 +14,20 @@ public class PubsubAutoTopic
 
     public readonly string fullTopic;
 
+    /// <summary>
+    /// Если не нулл, используется для аутентификации этот токен вместо стандартного.
+    /// </summary>
+    public readonly string? token;
+
     public readonly TwitchPubsubClient client;
 
     public Action<string>? RawDataReceived;
 
-    public PubsubAutoTopic(string channelTwitchId, string fullTopic, TwitchPubsubClient client)
+    public PubsubAutoTopic(string channelTwitchId, string fullTopic, string? token, TwitchPubsubClient client)
     {
         this.channelTwitchId = channelTwitchId;
         this.fullTopic = fullTopic;
+        this.token = token;
         this.client = client;
     }
 
