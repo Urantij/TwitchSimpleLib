@@ -101,6 +101,11 @@ public class WsConnection
         if (!Connected)
             return;
 
+        if (_logger?.IsEnabled(LogLevel.Trace) == true)
+        {
+            _logger.LogTrace($"{nameof(SendAsync)} {{content}}", message);
+        }
+
         try
         {
             // Оптимизация НЕВЕРОЯТНАЯ.
