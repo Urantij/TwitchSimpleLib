@@ -11,6 +11,9 @@ public class TwitchChatClientOpts : IBaseClientOpts
     public string Username { get; set; }
     public string OauthToken { get; set; }
 
+    /// <summary>
+    /// Если этот объект создан без <see cref="Username"/> и <see cref="OauthToken"/>, будет выполнен анонимный вход
+    /// </summary>
     public bool Anonymous { get; set; }
 
     public TimeSpan PingDelay { get; set; } = TimeSpan.FromMinutes(1);

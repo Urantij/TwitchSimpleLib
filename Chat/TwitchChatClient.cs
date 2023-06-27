@@ -250,7 +250,7 @@ public class TwitchChatClient : IrcClient
 
             case "PONG":
                 {
-                    string text = message.parameters![0];
+                    string text = message.parameters!.Last();
                     ProcessPong(text);
                     return;
                 }
