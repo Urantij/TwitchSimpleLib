@@ -13,6 +13,8 @@ public class PingManager
     public event Func<PingManager, string, Task>? Pinging;
     public event Action<PingManager>? Timeouted;
 
+    public object? State { get; init; }
+
     public bool Stopped { get; private set; }
 
     private CancellationTokenSource cts = new();
@@ -22,11 +24,12 @@ public class PingManager
     private readonly TimeSpan pingDelay;
     private readonly TimeSpan pingTimeout;
 
-    public PingManager(bool compareText, TimeSpan pingDelay, TimeSpan pingTimeout)
+    public PingManager(bool compareText, TimeSpan pingDelay, TimeSpan pingTimeout, object? state = null)
     {
         this.compareText = compareText;
         this.pingDelay = pingDelay;
         this.pingTimeout = pingTimeout;
+        State = state;
     }
 
     public void Start()

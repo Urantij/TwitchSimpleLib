@@ -213,7 +213,7 @@ public class TwitchChatClient : IrcClient
         await connection.SendAsync("NICK " + opts.Username/*.ToLower()*/);
         // USER urantij 8 * :urantij
 
-        pingManager = new(true, opts.PingDelay, opts.PingTimeout);
+        pingManager = new(true, opts.PingDelay, opts.PingTimeout, state: connection);
         pingManager.Pinging += Pinging;
         pingManager.Timeouted += Timeouted;
         pingManager.Start();
@@ -251,7 +251,7 @@ public class TwitchChatClient : IrcClient
             case "PONG":
                 {
                     string text = message.parameters!.Last();
-                    ProcessPong(text);
+                    ProcessPong(connection, text);
                     return;
                 }
 
@@ -309,9 +309,10 @@ public class TwitchChatClient : IrcClient
         await SendRawAsync(connection, $"PONG :{text}");
     }
 
-    private void ProcessPong(string text)
+    private void ProcessPong(WsConnection connection, string text)
     {
-        pingManager!.PongReceived(text);
+        if (connection == pingManager?.State)
+            pingManager.PongReceived(text);
     }
 
     private void ProcessChannelJoined(string channel)
@@ -365,7 +366,7 @@ public class TwitchChatClient : IrcClient
 
     private async Task Pinging(PingManager pingManager, string text)
     {
-        if (pingManager != this.pingManager || !IsConnected)
+        if (pingManager != this.pingManager || pingManager.State != connection || !IsConnected)
             return;
 
         await SendRawAsync($"PING :{text}");
@@ -373,7 +374,7 @@ public class TwitchChatClient : IrcClient
 
     private void Timeouted(PingManager pingManager)
     {
-        if (pingManager != this.pingManager || !IsConnected)
+        if (pingManager != this.pingManager || pingManager.State != connection || !IsConnected)
             return;
 
         connection!.Dispose(new Exception("Ping Timeout"));

@@ -390,7 +390,7 @@ public class TwitchPubsubClient : BaseClient
             _logger?.LogWarning("Клиент обязан подписаться на какой-нибудь топик в течение 15 секунд после подключения. Но никаких топиков на данный момент нет.");
         }
 
-        pingManager = new(false, opts.PingDelay, opts.PingTimeout);
+        pingManager = new(false, opts.PingDelay, opts.PingTimeout, state: connection);
         pingManager.Pinging += Pinging;
         pingManager.Timeouted += Timeouted;
         pingManager.Start();
@@ -398,6 +398,8 @@ public class TwitchPubsubClient : BaseClient
 
     protected override void MessageReceived(object? sender, string e)
     {
+        WsConnection thisConnection = (WsConnection)sender!;
+
         base.MessageReceived(sender, e);
 
         JsonDocument doc = JsonDocument.Parse(e);
@@ -412,7 +414,8 @@ public class TwitchPubsubClient : BaseClient
         switch (type)
         {
             case "PONG":
-                pingManager?.PongReceived("");
+                if (pingManager?.State == thisConnection)
+                    pingManager.PongReceived("");
                 return;
 
             case "RECONNECT":
@@ -474,7 +477,7 @@ public class TwitchPubsubClient : BaseClient
 
     private async Task Pinging(PingManager pingManager, string text)
     {
-        if (pingManager != this.pingManager || !IsConnected)
+        if (pingManager != this.pingManager || pingManager.State != connection || !IsConnected)
             return;
 
         PubsubPingMessage message = new();
@@ -483,7 +486,7 @@ public class TwitchPubsubClient : BaseClient
 
     private void Timeouted(PingManager pingManager)
     {
-        if (pingManager != this.pingManager || !IsConnected)
+        if (pingManager != this.pingManager || pingManager.State != connection || !IsConnected)
             return;
 
         connection!.Dispose(new Exception("Ping Timeout"));
