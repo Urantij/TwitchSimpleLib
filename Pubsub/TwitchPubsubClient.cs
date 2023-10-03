@@ -26,13 +26,13 @@ public class TwitchPubsubClient : BaseClient
 
     public readonly TwitchPubsubClientOpts opts;
 
-    public TwitchPubsubClient(TwitchPubsubClientOpts opts, ILoggerFactory? loggerFactory)
-        : this(url, opts, loggerFactory)
+    public TwitchPubsubClient(TwitchPubsubClientOpts opts, ILoggerFactory? loggerFactory, CancellationToken cancellationToken = default)
+        : this(url, opts, loggerFactory, cancellationToken)
     {
     }
 
-    public TwitchPubsubClient(Uri uri, TwitchPubsubClientOpts opts, ILoggerFactory? loggerFactory)
-        : base(uri, opts, loggerFactory)
+    public TwitchPubsubClient(Uri uri, TwitchPubsubClientOpts opts, ILoggerFactory? loggerFactory, CancellationToken cancellationToken = default)
+        : base(uri, opts, loggerFactory, cancellationToken)
     {
         this.opts = opts;
     }
@@ -390,7 +390,7 @@ public class TwitchPubsubClient : BaseClient
             _logger?.LogWarning("Клиент обязан подписаться на какой-нибудь топик в течение 15 секунд после подключения. Но никаких топиков на данный момент нет.");
         }
 
-        pingManager = new(false, opts.PingDelay, opts.PingTimeout, state: connection);
+        pingManager = new(false, opts.PingDelay, opts.PingTimeout, state: connection, cancellationToken: cancellationToken);
         pingManager.Pinging += Pinging;
         pingManager.Timeouted += Timeouted;
         pingManager.Start();

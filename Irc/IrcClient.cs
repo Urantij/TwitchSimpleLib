@@ -11,8 +11,8 @@ public class IrcClient : BaseClient
 {
     public event Action<RawIrcMessage>? RawIrcMessageReceived;
 
-    protected IrcClient(Uri uri, IBaseClientOpts opts, ILoggerFactory? loggerFactory)
-        : base(uri, opts, loggerFactory)
+    protected IrcClient(Uri uri, IBaseClientOpts opts, ILoggerFactory? loggerFactory, CancellationToken cancellationToken = default)
+        : base(uri, opts, loggerFactory, cancellationToken)
     {
     }
 

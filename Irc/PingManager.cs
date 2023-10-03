@@ -23,13 +23,15 @@ public class PingManager
     private readonly bool compareText;
     private readonly TimeSpan pingDelay;
     private readonly TimeSpan pingTimeout;
+    private readonly CancellationToken cancellationToken;
 
-    public PingManager(bool compareText, TimeSpan pingDelay, TimeSpan pingTimeout, object? state = null)
+    public PingManager(bool compareText, TimeSpan pingDelay, TimeSpan pingTimeout, object? state = null, CancellationToken cancellationToken = default)
     {
         this.compareText = compareText;
         this.pingDelay = pingDelay;
         this.pingTimeout = pingTimeout;
         State = state;
+        this.cancellationToken = cancellationToken;
     }
 
     public void Start()
@@ -70,9 +72,11 @@ public class PingManager
         {
             cts = new CancellationTokenSource();
 
+            using var resultCts = CancellationTokenSource.CreateLinkedTokenSource(cts.Token, cancellationToken);
+
             try
             {
-                await Task.Delay(pingDelay, cts.Token);
+                await Task.Delay(pingDelay, resultCts.Token);
 
                 // Если отмена произошла здесь, нет смысла делать проверку на стоп.
                 // Потому что мы либо уже получили понг, и ждём кд, либо не попадаем сюда.
@@ -87,7 +91,7 @@ public class PingManager
 
             try
             {
-                await Task.Delay(pingTimeout, cts.Token);
+                await Task.Delay(pingTimeout, resultCts.Token);
             }
             catch { continue; }
 

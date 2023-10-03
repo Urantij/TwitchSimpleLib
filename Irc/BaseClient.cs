@@ -22,17 +22,19 @@ public class BaseClient
 
     protected ILoggerFactory? _loggerFactory;
     protected ILogger? _logger;
+    protected readonly CancellationToken cancellationToken;
 
     private readonly Uri uri;
     private readonly TimeSpan connectionTimeout;
     protected WsConnection? connection;
 
-    protected BaseClient(Uri uri, IBaseClientOpts opts, ILoggerFactory? loggerFactory)
+    protected BaseClient(Uri uri, IBaseClientOpts opts, ILoggerFactory? loggerFactory, CancellationToken cancellationToken = default)
     {
         this.uri = uri;
         this.connectionTimeout = opts.ConnectionTimeout;
         this._loggerFactory = loggerFactory;
         this._logger = loggerFactory?.CreateLogger(this.GetType());
+        this.cancellationToken = cancellationToken;
 
         this.reconnectionTime = new ReconnectionTime(opts.MinReconnectTime, opts.MaxReconnectTime);
     }
@@ -41,7 +43,7 @@ public class BaseClient
     {
         Closed = false;
 
-        WsConnection caller = connection = new WsConnection(uri, _loggerFactory);
+        WsConnection caller = connection = new WsConnection(uri, _loggerFactory, cancellationToken);
         caller.MessageReceived += OnMessageReceived;
         caller.Disposing += ConnectionDisposing;
 
@@ -103,7 +105,11 @@ public class BaseClient
 
                 waitTime += TimeSpan.FromMilliseconds(RandomNumberGenerator.GetInt32(50, 750));
 
-                await Task.Delay(waitTime);
+                try
+                {
+                    await Task.Delay(waitTime, cancellationToken);
+                }
+                catch { return; }
 
                 await ConnectAsync();
             });

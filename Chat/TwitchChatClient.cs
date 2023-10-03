@@ -34,14 +34,14 @@ public class TwitchChatClient : IrcClient
     private readonly List<ChatAutoChannel> autoChannels = new();
     private PingManager? pingManager;
 
-    public TwitchChatClient(bool secure, TwitchChatClientOpts opts, ILoggerFactory? loggerFactory)
-        : this(secure ? wssUrl : wsUrl, opts, loggerFactory)
+    public TwitchChatClient(bool secure, TwitchChatClientOpts opts, ILoggerFactory? loggerFactory, CancellationToken cancellationToken = default)
+        : this(secure ? wssUrl : wsUrl, opts, loggerFactory, cancellationToken)
     {
 
     }
 
-    public TwitchChatClient(Uri uri, TwitchChatClientOpts opts, ILoggerFactory? loggerFactory)
-        : base(uri, opts, loggerFactory)
+    public TwitchChatClient(Uri uri, TwitchChatClientOpts opts, ILoggerFactory? loggerFactory, CancellationToken cancellationToken = default)
+        : base(uri, opts, loggerFactory, cancellationToken)
     {
         this.opts = opts;
     }
@@ -213,7 +213,7 @@ public class TwitchChatClient : IrcClient
         await connection.SendAsync("NICK " + opts.Username/*.ToLower()*/);
         // USER urantij 8 * :urantij
 
-        pingManager = new(true, opts.PingDelay, opts.PingTimeout, state: connection);
+        pingManager = new(true, opts.PingDelay, opts.PingTimeout, state: connection, cancellationToken: cancellationToken);
         pingManager.Pinging += Pinging;
         pingManager.Timeouted += Timeouted;
         pingManager.Start();
