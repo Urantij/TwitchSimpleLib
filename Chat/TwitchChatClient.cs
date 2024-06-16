@@ -189,6 +189,14 @@ public class TwitchChatClient : IrcClient
         return RemoveAutoChannel(autoChannel);
     }
 
+    public List<ChatAutoChannel> CopyAutoChannels()
+    {
+        lock (autoChannels)
+        {
+            return autoChannels.ToList();
+        }
+    }
+
     public Task SendMessageAsync(string channel, string text)
         => SendRawAsync($"PRIVMSG #{channel.ToLower()} :{text}");
 
