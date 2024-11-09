@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace TwitchSimpleLib.Pubsub;
 
 /// <summary>
@@ -32,7 +27,7 @@ public class PubsubAutoTopic
     }
 
     public Task UnlistenAsync()
-    => client.RemoveAutoTopicAsync(this);
+        => client.RemoveAutoTopicAsync(this);
 
     internal void OnRawDataReceived(string data)
     {

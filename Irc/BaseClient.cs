@@ -1,16 +1,11 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
-using IrcParserNet.Irc;
 using Microsoft.Extensions.Logging;
 
 namespace TwitchSimpleLib.Irc;
 
 public class BaseClient
 {
-    public bool IsConnected => connection?.Connected == true;
+    public bool IsConnected => _connection?.Connected == true;
 
     public bool Closed { get; private set; }
 
@@ -18,38 +13,39 @@ public class BaseClient
     public event Action<Exception?>? ConnectionClosed;
     public event Action<(Exception exception, string message)>? MessageProcessingException;
 
-    protected readonly ReconnectionTime reconnectionTime;
+    protected readonly ReconnectionTime _reconnectionTime;
 
     protected ILoggerFactory? _loggerFactory;
     protected ILogger? _logger;
-    protected readonly CancellationToken cancellationToken;
+    protected readonly CancellationToken _cancellationToken;
 
-    private readonly Uri uri;
-    private readonly TimeSpan connectionTimeout;
-    protected WsConnection? connection;
+    private readonly Uri _uri;
+    private readonly TimeSpan _connectionTimeout;
+    protected WsConnection? _connection;
 
-    protected BaseClient(Uri uri, IBaseClientOpts opts, ILoggerFactory? loggerFactory, CancellationToken cancellationToken = default)
+    protected BaseClient(Uri uri, IBaseClientOpts opts, ILoggerFactory? loggerFactory,
+        CancellationToken cancellationToken = default)
     {
-        this.uri = uri;
-        this.connectionTimeout = opts.ConnectionTimeout;
+        this._uri = uri;
+        this._connectionTimeout = opts.ConnectionTimeout;
         this._loggerFactory = loggerFactory;
         this._logger = loggerFactory?.CreateLogger(this.GetType());
-        this.cancellationToken = cancellationToken;
+        this._cancellationToken = cancellationToken;
 
-        this.reconnectionTime = new ReconnectionTime(opts.MinReconnectTime, opts.MaxReconnectTime);
+        this._reconnectionTime = new ReconnectionTime(opts.MinReconnectTime, opts.MaxReconnectTime);
     }
 
     public async Task ConnectAsync()
     {
         Closed = false;
 
-        WsConnection caller = connection = new WsConnection(uri, _loggerFactory, cancellationToken);
+        WsConnection caller = _connection = new WsConnection(_uri, _loggerFactory, _cancellationToken);
         caller.MessageReceived += OnMessageReceived;
         caller.Disposing += ConnectionDisposing;
 
-        if (await caller.StartAsync(connectionTimeout))
+        if (await caller.StartAsync(_connectionTimeout))
         {
-            reconnectionTime.Connected();
+            _reconnectionTime.Connected();
 
             await ConnectedAsync(caller);
 
@@ -58,7 +54,7 @@ public class BaseClient
     }
 
     public Task SendRawAsync(string content)
-        => SendRawAsync(connection, content);
+        => SendRawAsync(_connection, content);
 
     public static Task SendRawAsync(WsConnection? connection, string content)
     {
@@ -71,7 +67,7 @@ public class BaseClient
     public void Close()
     {
         Closed = true;
-        connection?.Dispose();
+        _connection?.Dispose();
     }
 
     protected virtual Task ConnectedAsync(WsConnection connection)
@@ -101,15 +97,18 @@ public class BaseClient
         {
             Task.Run(async () =>
             {
-                TimeSpan waitTime = reconnectionTime.DoAttempt();
+                TimeSpan waitTime = _reconnectionTime.DoAttempt();
 
                 waitTime += TimeSpan.FromMilliseconds(RandomNumberGenerator.GetInt32(50, 750));
 
                 try
                 {
-                    await Task.Delay(waitTime, cancellationToken);
+                    await Task.Delay(waitTime, _cancellationToken);
                 }
-                catch { return; }
+                catch
+                {
+                    return;
+                }
 
                 await ConnectAsync();
             });

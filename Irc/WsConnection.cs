@@ -1,10 +1,5 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Net.WebSockets;
 using System.Text;
-using System.Threading.Tasks;
-using IrcParserNet.Irc;
 using Microsoft.Extensions.Logging;
 
 namespace TwitchSimpleLib.Irc;
@@ -51,6 +46,7 @@ public class WsConnection
         {
             throw new Exception("Конекшн уже работает");
         }
+
         if (disposed)
         {
             throw new Exception("Конекшн уже диспоузед");
@@ -137,6 +133,7 @@ public class WsConnection
                     Array.Resize(ref buffer, buffer.Length + bufferSizeStep);
                     spaceLeft += bufferSizeStep;
                 }
+
                 ArraySegment<byte> segment = new(buffer, currentCount, spaceLeft);
 
                 WebSocketReceiveResult result = await client.ReceiveAsync(segment, cancellationToken);
@@ -159,6 +156,7 @@ public class WsConnection
                         {
                             OnMessageReceived(singleMessage);
                         }
+
                         currentCount = 0;
                         spaceLeft = buffer.Length;
                         break;

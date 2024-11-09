@@ -1,29 +1,20 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace TwitchSimpleLib.Pubsub.Payloads.Predictions;
 
 public class PredictionOutcome
 {
-    [JsonPropertyName("id")]
-    public string Id { get; set; }
-    [JsonPropertyName("color")]
-    public string Color { get; set; }
-    [JsonPropertyName("title")]
-    public string Title { get; set; }
+    [JsonPropertyName("id")] public string Id { get; set; }
+    [JsonPropertyName("color")] public string Color { get; set; }
+    [JsonPropertyName("title")] public string Title { get; set; }
 
-    [JsonPropertyName("total_points")]
-    public int TotalPoints { get; set; }
-    [JsonPropertyName("total_users")]
-    public int TotalUsers { get; set; }
+    [JsonPropertyName("total_points")] public int TotalPoints { get; set; }
+    [JsonPropertyName("total_users")] public int TotalUsers { get; set; }
 
-    [JsonPropertyName("top_predictors")]
-    public PredictionPredictor[] TopPredictors { get; set; }
+    [JsonPropertyName("top_predictors")] public PredictionPredictor[] TopPredictors { get; set; }
 
-    public PredictionOutcome(string id, string color, string title, int totalPoints, int totalUsers, PredictionPredictor[] topPredictors)
+    public PredictionOutcome(string id, string color, string title, int totalPoints, int totalUsers,
+        PredictionPredictor[] topPredictors)
     {
         Id = id;
         Color = color;

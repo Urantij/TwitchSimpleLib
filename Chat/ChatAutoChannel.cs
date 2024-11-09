@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using TwitchSimpleLib.Chat.Messages;
 
 namespace TwitchSimpleLib.Chat;
@@ -29,20 +25,24 @@ public class ChatAutoChannel
     /// Доступен после первого RoomStateReceived.
     /// </summary>
     public bool? EmoteOnly { get; private set; }
+
     /// <summary>
     /// Доступен после первого RoomStateReceived.
     /// В минутах.
     /// </summary>
     public int? FollowersOnly { get; private set; }
+
     /// <summary>
     /// Доступен после первого RoomStateReceived.
     /// </summary>
     public bool? R9k { get; private set; }
+
     /// <summary>
     /// Доступен после первого RoomStateReceived.
     /// В секундах.
     /// </summary>
     public int? Slow { get; private set; }
+
     /// <summary>
     /// Доступен после первого RoomStateReceived.
     /// </summary>

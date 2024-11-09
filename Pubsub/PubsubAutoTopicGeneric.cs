@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace TwitchSimpleLib.Pubsub;
 
 // Я долго думал, как можно было бы сделать десериализацию через женерик тип в топике.
@@ -16,6 +11,9 @@ namespace TwitchSimpleLib.Pubsub;
 /// </summary>
 public class PubsubAutoTopic<T> : PubsubAutoTopic
 {
+    /// <summary>
+    /// Если не удалось десериализовать дату, не придёт.
+    /// </summary>
     public Action<T>? DataReceived;
 
     public PubsubAutoTopic(string channelTwitchId, string topic, string? token, TwitchPubsubClient client)

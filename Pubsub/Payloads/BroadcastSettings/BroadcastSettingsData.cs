@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json.Serialization;
-using System.Threading.Tasks;
 
 namespace TwitchSimpleLib.Pubsub.Payloads.BroadcastSettings;
 
@@ -15,25 +11,20 @@ public class BroadcastSettingsData
     [JsonPropertyName("type")]
     public string Type { get; set; }
 
-    [JsonPropertyName("old_status")]
-    public string OldStatus { get; set; }
+    [JsonPropertyName("old_status")] public string OldStatus { get; set; }
 
-    [JsonPropertyName("status")]
-    public string Status { get; set; }
+    [JsonPropertyName("status")] public string Status { get; set; }
 
-    [JsonPropertyName("old_game")]
-    public string OldGame { get; set; }
+    [JsonPropertyName("old_game")] public string OldGame { get; set; }
 
-    [JsonPropertyName("game")]
-    public string Game { get; set; }
+    [JsonPropertyName("game")] public string Game { get; set; }
 
-    [JsonPropertyName("old_game_id")]
-    public int OldGameId { get; set; }
+    [JsonPropertyName("old_game_id")] public int OldGameId { get; set; }
 
-    [JsonPropertyName("game_id")]
-    public int GameId { get; set; }
+    [JsonPropertyName("game_id")] public int GameId { get; set; }
 
-    public BroadcastSettingsData(string type, string oldStatus, string status, string oldGame, string game, int oldGameId, int gameId)
+    public BroadcastSettingsData(string type, string oldStatus, string status, string oldGame, string game,
+        int oldGameId, int gameId)
     {
         Type = type;
         OldStatus = oldStatus;

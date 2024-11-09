@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Security.Cryptography;
-using System.Threading.Tasks;
 using IrcParserNet.Irc;
 using Microsoft.Extensions.Logging;
 using TwitchSimpleLib.Chat.Messages;
@@ -19,10 +15,12 @@ public class TwitchChatClient : IrcClient
     /// Null, если вход анонимный.
     /// </summary>
     public event EventHandler<TwitchGlobalUserStateMessage?>? AuthFinished;
+
     /// <summary>
     /// Единственный вылет, когда клиент не будет пытаться переподключиться.
     /// </summary>
     public event EventHandler? AuthFailed;
+
     public event EventHandler<string>? ChannelJoined;
     public event EventHandler<TwitchPrivateMessage>? PrivateMessageReceived;
     public event EventHandler<TwitchRoomStateMessage>? RoomStateReceived;
@@ -34,13 +32,14 @@ public class TwitchChatClient : IrcClient
     private readonly List<ChatAutoChannel> autoChannels = new();
     private PingManager? pingManager;
 
-    public TwitchChatClient(bool secure, TwitchChatClientOpts opts, ILoggerFactory? loggerFactory, CancellationToken cancellationToken = default)
+    public TwitchChatClient(bool secure, TwitchChatClientOpts opts, ILoggerFactory? loggerFactory,
+        CancellationToken cancellationToken = default)
         : this(secure ? wssUrl : wsUrl, opts, loggerFactory, cancellationToken)
     {
-
     }
 
-    public TwitchChatClient(Uri uri, TwitchChatClientOpts opts, ILoggerFactory? loggerFactory, CancellationToken cancellationToken = default)
+    public TwitchChatClient(Uri uri, TwitchChatClientOpts opts, ILoggerFactory? loggerFactory,
+        CancellationToken cancellationToken = default)
         : base(uri, opts, loggerFactory, cancellationToken)
     {
         this.opts = opts;
@@ -117,10 +116,7 @@ public class TwitchChatClient : IrcClient
 
         if (IsConnected)
         {
-            Task.Run(async () =>
-            {
-                await JoinAsync(channel);
-            });
+            Task.Run(async () => { await JoinAsync(channel); });
         }
 
         return autoChannel;
@@ -157,10 +153,7 @@ public class TwitchChatClient : IrcClient
 
         if (removed && IsConnected)
         {
-            Task.Run(async () =>
-            {
-                await LeaveAsync(autoChannel.channel);
-            });
+            Task.Run(async () => { await LeaveAsync(autoChannel.channel); });
         }
 
         return removed;
@@ -204,7 +197,7 @@ public class TwitchChatClient : IrcClient
         => SendRawAsync($"@reply-parent-msg-id={parentMessageId} PRIVMSG #{channel.ToLower()} :{text}");
 
     public Task JoinAsync(string channel)
-        => JoinAsync(connection, channel);
+        => JoinAsync(_connection, channel);
 
     public static Task JoinAsync(WsConnection? connection, string channel)
         => SendRawAsync(connection, $"JOIN #{channel.ToLower()}");
@@ -218,10 +211,11 @@ public class TwitchChatClient : IrcClient
 
         await connection.SendAsync("CAP REQ :twitch.tv/tags twitch.tv/commands");
         await connection.SendAsync("PASS " + opts.OauthToken);
-        await connection.SendAsync("NICK " + opts.Username/*.ToLower()*/);
+        await connection.SendAsync("NICK " + opts.Username /*.ToLower()*/);
         // USER urantij 8 * :urantij
 
-        pingManager = new(true, opts.PingDelay, opts.PingTimeout, state: connection, cancellationToken: cancellationToken);
+        pingManager = new(true, opts.PingDelay, opts.PingTimeout, state: connection,
+            cancellationToken: _cancellationToken);
         pingManager.Pinging += Pinging;
         pingManager.Timeouted += Timeouted;
         pingManager.Start();
@@ -250,18 +244,18 @@ public class TwitchChatClient : IrcClient
                 return;
 
             case "PING":
-                {
-                    string text = message.parameters![0];
-                    ProcessPing(connection, text);
-                    return;
-                }
+            {
+                string text = message.parameters![0];
+                ProcessPing(connection, text);
+                return;
+            }
 
             case "PONG":
-                {
-                    string text = message.parameters!.Last();
-                    ProcessPong(connection, text);
-                    return;
-                }
+            {
+                string text = message.parameters!.Last();
+                ProcessPong(connection, text);
+                return;
+            }
 
             // Sent when the Twitch IRC server needs to terminate the connection for maintenance reasons.
             case "RECONNECT":
@@ -374,7 +368,7 @@ public class TwitchChatClient : IrcClient
 
     private async Task Pinging(PingManager pingManager, string text)
     {
-        if (pingManager != this.pingManager || pingManager.State != connection || !IsConnected)
+        if (pingManager != this.pingManager || pingManager.State != _connection || !IsConnected)
             return;
 
         await SendRawAsync($"PING :{text}");
@@ -382,10 +376,10 @@ public class TwitchChatClient : IrcClient
 
     private void Timeouted(PingManager pingManager)
     {
-        if (pingManager != this.pingManager || pingManager.State != connection || !IsConnected)
+        if (pingManager != this.pingManager || pingManager.State != _connection || !IsConnected)
             return;
 
-        connection!.Dispose(new Exception("Ping Timeout"));
+        _connection!.Dispose(new Exception("Ping Timeout"));
     }
 
     private async Task ProcessAuthAsync(WsConnection connection, TwitchGlobalUserStateMessage? message)

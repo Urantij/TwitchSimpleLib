@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using IrcParserNet.Irc;
 
 namespace TwitchSimpleLib.Chat.Messages;
@@ -148,9 +144,8 @@ public class TwitchPrivateMessage : BaseIrcMessage
                     int splitIndex = badgeSpan.IndexOf('/');
 
                     badgesDict.Add(new string(badgeSpan[..splitIndex]),
-                                    new string(badgeSpan[(splitIndex + 1)..]));
-                }
-                while (badgeSpan != remainingBadgesSpan);
+                        new string(badgeSpan[(splitIndex + 1)..]));
+                } while (badgeSpan != remainingBadgesSpan);
             }
 
             this.badges = badgesDict;

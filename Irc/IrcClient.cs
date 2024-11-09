@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using IrcParserNet.Irc;
 using Microsoft.Extensions.Logging;
 
@@ -11,7 +7,8 @@ public class IrcClient : BaseClient
 {
     public event Action<RawIrcMessage>? RawIrcMessageReceived;
 
-    protected IrcClient(Uri uri, IBaseClientOpts opts, ILoggerFactory? loggerFactory, CancellationToken cancellationToken = default)
+    protected IrcClient(Uri uri, IBaseClientOpts opts, ILoggerFactory? loggerFactory,
+        CancellationToken cancellationToken = default)
         : base(uri, opts, loggerFactory, cancellationToken)
     {
     }

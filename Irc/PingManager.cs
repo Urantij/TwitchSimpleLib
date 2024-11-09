@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace TwitchSimpleLib.Irc;
 
 /// <summary>
@@ -25,7 +20,8 @@ public class PingManager
     private readonly TimeSpan pingTimeout;
     private readonly CancellationToken cancellationToken;
 
-    public PingManager(bool compareText, TimeSpan pingDelay, TimeSpan pingTimeout, object? state = null, CancellationToken cancellationToken = default)
+    public PingManager(bool compareText, TimeSpan pingDelay, TimeSpan pingTimeout, object? state = null,
+        CancellationToken cancellationToken = default)
     {
         this.compareText = compareText;
         this.pingDelay = pingDelay;
@@ -49,7 +45,9 @@ public class PingManager
             thisCts.Cancel();
             thisCts.Dispose();
         }
-        catch { }
+        catch
+        {
+        }
     }
 
     public void PongReceived(string text)
@@ -62,7 +60,9 @@ public class PingManager
                 thisCts.Cancel();
                 thisCts.Dispose();
             }
-            catch { }
+            catch
+            {
+            }
         }
     }
 
@@ -81,7 +81,10 @@ public class PingManager
                 // Если отмена произошла здесь, нет смысла делать проверку на стоп.
                 // Потому что мы либо уже получили понг, и ждём кд, либо не попадаем сюда.
             }
-            catch { return; }
+            catch
+            {
+                return;
+            }
 
             expectedText = DateTime.Now.Ticks.ToString();
 
@@ -93,7 +96,10 @@ public class PingManager
             {
                 await Task.Delay(pingTimeout, resultCts.Token);
             }
-            catch { continue; }
+            catch
+            {
+                continue;
+            }
 
             Timeouted?.Invoke(this);
             return;

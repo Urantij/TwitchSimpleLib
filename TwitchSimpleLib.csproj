@@ -1,22 +1,25 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net7.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <NoWarn>1591</NoWarn>
-    <PackageId>TwitchSimpleLib</PackageId>
-    <Version>1.3.5</Version>
-    <Description>
-      Клиенты для чата и пабсаба.
-    </Description>
-    <Authors>Urantij</Authors>
-    <RepositoryUrl>https://github.com/Urantij/TwitchSimpleLib</RepositoryUrl>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="7.0.0" />
-    <PackageReference Include="IrcParserNet" Version="1.0.2" />
-  </ItemGroup>
+    <PropertyGroup>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <NoWarn>1591</NoWarn>
+        <PackageId>TwitchSimpleLib</PackageId>
+        <Version>1.4.0-alpha</Version>
+        <Description>
+            Клиенты для чата и пабсаба.
+        </Description>
+        <Authors>Urantij</Authors>
+        <RepositoryUrl>https://github.com/Urantij/TwitchSimpleLib</RepositoryUrl>
+        <TargetFrameworks>net7.0;net8.0</TargetFrameworks>
+    </PropertyGroup>
+    <PropertyGroup>
+        <IsAotCompatible>true</IsAotCompatible>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.2"/>
+        <PackageReference Include="IrcParserNet" Version="1.0.2"/>
+    </ItemGroup>
 
 </Project>
